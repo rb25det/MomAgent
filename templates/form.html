@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>お母さんAI 設定フォーム</title>
+  <style>
+    body { font-family: sans-serif; max-width: 820px; margin: 0 auto; padding: 20px; }
+    h1, h2 { margin-top: 24px; }
+    fieldset { margin-bottom: 24px; padding: 16px; border-radius: 8px; border: 1px solid #ccc; }
+    label { display: block; margin-top: 8px; }
+    input, select { margin-top: 4px; padding: 4px; }
+    .slider-group { margin: 8px 0; }
+    button { padding: 8px 16px; font-size: 15px; }
+  </style>
+</head>
+<body>
+
+<h1>お母さんAI 設定フォーム</h1>
+
+<form method="post" action="/setup">
+
+  <!-- 1. ユーザープロファイル -->
+  <h2>1. ユーザープロファイル</h2>
+
+  <fieldset>
+    <legend>基本情報</legend>
+
+    <label>ニックネーム
+      <input type="text" name="nickname" required>
+    </label>
+
+    <label>性別
+      <select name="gender">
+        <option value="none">答えない</option>
+        <option value="male">男性</option>
+        <option value="female">女性</option>
+        <option value="other">その他</option>
+      </select>
+    </label>
+
+    <label>年齢
+      <input type="number" name="age" min="10" max="80">
+    </label>
+
+    <label>学年
+      <select name="grade">
+        <option value="">選択なし</option>
+        <option value="high_1">高校1年</option>
+        <option value="high_2">高校2年</option>
+        <option value="high_3">高校3年</option>
+        <option value="college_1">大学1年</option>
+        <option value="college_2">大学2年</option>
+        <option value="college_3">大学3年</option>
+        <option value="college_4">大学4年</option>
+        <option value="master_1">院1年</option>
+        <option value="master_2">院2年</option>
+        <option value="graduate">既卒</option>
+      </select>
+    </label>
+
+    <label>職業
+      <select name="role_status">
+        <option value="student">学生</option>
+        <option value="worker">社会人</option>
+        <option value="parttime">アルバイト</option>
+        <option value="others">その他</option>
+      </select>
+    </label>
+
+  </fieldset>
+
+
+  <!-- 生活リズム -->
+  <fieldset>
+    <legend>生活リズム</legend>
+
+    <label>平日 起床時間
+      <input type="time" name="wake_time_weekday">
+    </label>
+
+    <label>平日 就寝時間
+      <input type="time" name="sleep_time_weekday">
+    </label>
+
+    <label>休日 起床時間
+      <input type="time" name="wake_time_holiday">
+    </label>
+
+    <label>休日 就寝時間
+      <input type="time" name="sleep_time_holiday">
+    </label>
+
+    <label>1日の平均睡眠時間（時間）
+      <input type="number" name="average_sleep_hours" min="0" max="24" step="0.5">
+    </label>
+
+    <p>よく使う時間帯（複数選択可）</p>
+    <label><input type="checkbox" name="active_time_slots" value="morning"> 朝</label>
+    <label><input type="checkbox" name="active_time_slots" value="noon"> 昼</label>
+    <label><input type="checkbox" name="active_time_slots" value="evening"> 夕方</label>
+    <label><input type="checkbox" name="active_time_slots" value="night"> 夜</label>
+    <label><input type="checkbox" name="active_time_slots" value="midnight"> 深夜</label>
+
+  </fieldset>
+
+
+  <!-- 健康 -->
+  <fieldset>
+    <legend>健康</legend>
+
+    <label>朝ごはん頻度
+      <select name="breakfast_frequency">
+        <option value="2">ほぼ毎日</option>
+        <option value="1">たまに</option>
+        <option value="0">ほとんど食べない</option>
+      </select>
+    </label>
+
+    <label>運動習慣（週あたりの回数）
+      <input type="number" name="exercise_frequency_per_week" min="0" max="7">
+    </label>
+
+  </fieldset>
+
+
+  <!-- 話題の好み -->
+  <fieldset>
+    <legend>話題の好み</legend>
+
+    <p>よく話したいテーマ（複数選択可）</p>
+    <label><input type="checkbox" name="topic_weights" value="job_hunting"> 就活</label>
+    <label><input type="checkbox" name="topic_weights" value="future"> 将来</label>
+    <label><input type="checkbox" name="topic_weights" value="health"> 健康</label>
+    <label><input type="checkbox" name="topic_weights" value="life_rhythm"> 生活リズム</label>
+    <label><input type="checkbox" name="topic_weights" value="money"> お金</label>
+    <label><input type="checkbox" name="topic_weights" value="love"> 恋愛</label>
+    <label><input type="checkbox" name="topic_weights" value="school"> 学校</label>
+    <label><input type="checkbox" name="topic_weights" value="parttime_job"> バイト</label>
+
+  </fieldset>
+
+
+  <!-- 2. お母さんの性格設定 -->
+  <h2>2. お母さんの性格設定</h2>
+
+  <fieldset>
+    <legend>キャラクター基本設定</legend>
+
+    <div class="slider-group">
+      <label>厳しい ←→ 優しい
+        <input type="range" name="strict_kind" min="-1" max="1" step="0.1" value="0">
+      </label>
+    </div>
+
+    <div class="slider-group">
+      <label>寡黙 ←→ おしゃべり
+        <input type="range" name="quiet_talkative" min="-1" max="1" step="0.1" value="0">
+      </label>
+    </div>
+
+    <label>口調
+      <select name="dialect_type">
+        <option value="normal">標準語</option>
+        <option value="kansai">関西弁</option>
+        <option value="hakata">博多弁</option>
+      </select>
+    </label>
+
+  </fieldset>
+
+
+  <fieldset>
+    <legend>相談スタイル</legend>
+
+    <p>悩みの聞き方（複数選択可）</p>
+    <label><input type="checkbox" name="listen_style" value="listen_deeply"> じっくり聞いてほしい</label>
+    <label><input type="checkbox" name="listen_style" value="give_clear_advice"> はっきりアドバイスしてほしい</label>
+    <label><input type="checkbox" name="listen_style" value="praise_a_lot"> とにかく褒めてほしい</label>
+
+    <label>話題を振ってくる頻度
+      <select name="topic_initiation_frequency">
+        <option value="1.0">よく話したい</option>
+        <option value="0.5">たまに</option>
+        <option value="0.1">本当にしんどい時だけ</option>
+      </select>
+    </label>
+
+    <label>話題の重さ
+      <select name="topic_weight_seriousness">
+        <option value="0.2">軽めの雑談多め</option>
+        <option value="0.8">しっかり相談多め</option>
+        <option value="0.5">半々くらい</option>
+      </select>
+    </label>
+
+  </fieldset>
+
+  <button type="submit">この設定でお母さんAIを作る</button>
+
+</form>
+
+</body>
+</html>

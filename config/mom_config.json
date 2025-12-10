@@ -1,0 +1,38 @@
+{
+  "user": {
+    "nickname": "motoki",
+    "gender": "male",
+    "age": 10,
+    "grade": "high_1",
+    "role_status": "student",
+    "life": {
+      "wake_time_weekday": "13:16",
+      "sleep_time_weekday": "13:16",
+      "wake_time_holiday": "13:16",
+      "sleep_time_holiday": "13:16",
+      "average_sleep_hours": 1.0,
+      "active_time_slots": [
+        "morning"
+      ]
+    },
+    "health": {
+      "breakfast_frequency_level": 2,
+      "exercise_frequency_per_week": 4
+    },
+    "topic_weights": {
+      "job_hunting": 1.0,
+      "future": 1.0
+    }
+  },
+  "mother_model": {
+    "strict_kind": 0.0,
+    "quiet_talkative": 0.0,
+    "dialect_type": "normal",
+    "listen_deeply": 1.0,
+    "give_clear_advice": 0.0,
+    "praise_a_lot": 0.0,
+    "topic_initiation_frequency": 1.0,
+    "topic_weight_seriousness": 0.2
+  },
+  "generated_model_name": "elyza-mom"
+}

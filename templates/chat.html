@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>お母さんAI チャット</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      background: #f5f5f7;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    #log {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 1rem;
+      height: 420px;
+      overflow-y: auto;
+      background: #fff;
+    }
+
+    .msg {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    /* ユーザ（右側・緑系） */
+    .user {
+      background: #d2f8d2;
+      align-self: flex-end;
+      margin-left: auto;
+    }
+
+    /* お母さん（左側・グレー系） */
+    .mom {
+      background: #e6e6e6;
+      align-self: flex-start;
+      margin-right: auto;
+    }
+
+    /* 入力フォーム */
+    #input-area {
+      margin-top: 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    #msg {
+      flex: 1;
+      padding: 0.6rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+
+    button {
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: #4caf50;
+      color: white;
+      font-size: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>お母さんAI</h1>
+
+<div id="log"></div>
+
+<div id="input-area">
+  <input id="msg" type="text" placeholder="話しかけてみてね">
+  <button id="send">送信</button>
+</div>
+
+<script>
+  const log = document.getElementById("log");
+  const input = document.getElementById("msg");
+  const sendBtn = document.getElementById("send");
+
+  function append(role, text) {
+    const div = document.createElement("div");
+    div.className = "msg " + role;
+    div.textContent = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function send() {
+    const msg = input.value.trim();
+    if (!msg) return;
+    append("user", msg);
+    input.value = "";
+
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: msg })
+    });
+
+    const data = await res.json();
+    append("mom", data.response);
+  }
+
+  sendBtn.onclick = send;
+
+  // 日本語変換 Enter 対応
+  let isComposing = false;
+  input.addEventListener("compositionstart", () => isComposing = true);
+  input.addEventListener("compositionend", () => isComposing = false);
+  input.addEventListener("keydown", e => {
+    if (isComposing) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  // 初期メッセージ
+  append("mom", "今日はどうするん？まず予定教えて。");
+</script>
+
+</body>
+</html>
