@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}お母さん設定{% endblock %}
+
+{% block content %}
+<h2>お母さんの性格選択</h2>
+
+<form method="POST" action="{{ url_for('mom_settings_page') }}">
+    
+    <label>タイプ（厳しい — 優しい）</label>
+    <input type="range" name="warmth_level" min="0" max="100" value="70">
+
+    <label>寡黙 — おしゃべり</label>
+    <input type="range" name="talkativeness" min="0" max="100" value="50">
+
+    <label>口調</label>
+    <select name="dialect">
+        <option value="standard">標準語</option>
+        <option value="kansai">関西弁</option>
+        <option value="hakata">博多弁</option>
+    </select>
+
+    <h4>相談スタイル（複数選択）</h4>
+
+    <div class="check-group">
+        <label><input type="checkbox" name="style_listen" value="1"> じっくり話を聞く</label>
+        <label><input type="checkbox" name="style_direct" value="1"> はっきりアドバイス</label>
+        <label><input type="checkbox" name="style_praise" value="1"> とにかく褒める</label>
+    </div>
+
+    <label>話題を振る頻度</label>
+    <select name="talk_frequency">
+        <option value="often">よく話したい</option>
+        <option value="sometimes">たまに</option>
+        <option value="rarely">本当にしんどい時だけ</option>
+    </select>
+
+    <label>話題の重さ</label>
+    <select name="topic_heaviness">
+        <option value="light">軽めの雑談多め</option>
+        <option value="serious">しっかり相談多め</option>
+        <option value="half">半々</option>
+    </select>
+
+    <button class="primary" type="submit">設定を保存してチャットへ</button>
+</form>
+{% endblock %}

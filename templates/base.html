@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}お母さんAI{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body>
+<header class="nav-header">
+    <div class="nav-container">
+        <div class="logo"><a href="{{ url_for('profile') }}">お母さんAI</a></div>
+        <nav class="main-nav">
+            <a href="{{ url_for('profile') }}">プロフィール</a>
+            <a href="{{ url_for('mom_settings_page') }}">お母さん設定</a>
+            <a href="{{ url_for('chat_page') }}">チャット</a>
+            <a href="{{ url_for('schedule_list') }}">予定一覧</a>
+        </nav>
+    </div>
+</header>
+
+<button class="back-btn" onclick="history.back()">← 戻る</button>
+
+<main class="main-area">
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

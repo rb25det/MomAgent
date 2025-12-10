@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}予定一覧{% endblock %}
+
+{% block content %}
+<h2>予定一覧</h2>
+
+<a class="btn" href="{{ url_for('schedule_add') }}">＋ 予定を追加</a>
+
+{% if schedules %}
+<ul class="schedule-list">
+    {% for s in schedules %}
+        <li>
+            <div class="s-head">
+                <strong>{{ loop.index }}.</strong>
+                <span>{{ s.date }} {{ s.time }}</span>
+                <span class="priority">優先度: {{ s.priority }}</span>
+            </div>
+            <div>{{ s.content }}</div>
+            <div class="s-actions">
+                <a href="{{ url_for('schedule_edit', index=loop.index0) }}">編集</a>
+                <form method="POST" action="{{ url_for('schedule_delete', index=loop.index0) }}" style="display:inline;">
+                    <button type="submit">削除</button>
+                </form>
+            </div>
+        </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>予定はまだありません。</p>
+{% endif %}
+{% endblock %}

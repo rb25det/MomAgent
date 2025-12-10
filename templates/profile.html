@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}プロフィール登録{% endblock %}
+
+{% block content %}
+<h2>プロフィール登録</h2>
+
+<form method="POST" action="{{ url_for('profile') }}">
+    <h3>A. 基本情報</h3>
+    <label>ニックネーム</label>
+    <input type="text" name="nickname" placeholder="ニックネーム" value="{{ session.get('profile',{}).get('nickname','') }}">
+
+    <label>性別（任意）</label>
+    <select name="gender">
+        <option value="">選択しない</option>
+        <option value="男性">男性</option>
+        <option value="女性">女性</option>
+        <option value="その他">その他</option>
+        <option value="答えない">答えない</option>
+    </select>
+
+    <div class="two-cols">
+        <div>
+            <label>年齢</label>
+            <input type="number" name="age" min="0" max="120" value="{{ session.get('profile',{}).get('age','') }}">
+        </div>
+        <div>
+            <label>学年（学生の場合）</label>
+            <select name="grade">
+                <option>選択しない</option><option>高校1年</option><option>高校2年</option><option>高校3年</option>
+                <option>大学1年</option><option>大学2年</option><option>大学3年</option><option>大学4年</option>
+                <option>院1年</option><option>院2年</option><option>既卒</option>
+            </select>
+        </div>
+    </div>
+
+    <label>職業</label>
+    <select name="occupation">
+        <option>学生</option><option>既卒</option><option>社会人</option><option>アルバイト</option><option>その他</option>
+    </select>
+
+    <h3>B. 生活リズム</h3>
+    <div class="two-cols">
+        <div>
+            <label>平日の起床時間</label>
+            <input type="time" name="wake_time_weekday">
+        </div>
+        <div>
+            <label>平日の就寝時間</label>
+            <input type="time" name="sleep_time_weekday">
+        </div>
+    </div>
+
+    <div class="two-cols">
+        <div>
+            <label>休日の起床時間</label>
+            <input type="time" name="wake_time_holiday">
+        </div>
+        <div>
+            <label>休日の就寝時間</label>
+            <input type="time" name="sleep_time_holiday">
+        </div>
+    </div>
+
+    <label>1日の平均睡眠時間（時間）</label>
+    <input type="number" step="0.5" min="0" max="24" name="average_sleep_hours">
+
+    <label>よく使う時間帯（複数選択）</label>
+    <select multiple name="active_time_slots">
+        <option>朝</option><option>昼</option><option>夕方</option><option>夜</option><option>深夜</option>
+    </select>
+
+    <h3>C. 就活・将来</h3>
+    <label>今一番不安なこと（短文）</label>
+    <textarea name="worry_now" rows="2"></textarea>
+
+    <h3>E. 健康</h3>
+    <label>朝ごはんを食べる頻度</label>
+    <select name="breakfast_frequency">
+        <option>ほぼ毎日</option><option>たまに</option><option>ほとんど食べない</option>
+    </select>
+
+    <label>運動習慣</label>
+    <select name="exercise_frequency">
+        <option>週3回以上</option><option>週1〜2回</option><option>週1回未満</option><option>ほぼしない</option>
+    </select>
+
+    <h3>G. 話題の好み（複数選択）</h3>
+    <label>話したいテーマ</label>
+    <select multiple name="interest_tags">
+        <option>就活</option><option>将来</option><option>健康</option><option>生活リズム</option><option>お金</option>
+        <option>恋愛</option><option>学校</option><option>バイト</option><option>時事</option>
+    </select>
+
+    <h4>テーマの優先度（0〜1）</h4>
+    <div class="weights-grid">
+        {% for t in ["就活","将来","健康","生活リズム","お金","恋愛","学校","バイト","時事"] %}
+            <label>{{ t }}</label>
+            <input type="range" name="weight_{{ t }}" min="0" max="1" step="0.1" value="0.5">
+        {% endfor %}
+    </div>
+
+    <button class="primary" type="submit">プロフィールを保存して次へ</button>
+</form>
+{% endblock %}

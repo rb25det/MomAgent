@@ -1,0 +1,116 @@
+body {
+    font-family: sans-serif;
+    background: #f0f2f5;
+    padding: 20px;
+}
+
+.section {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+h2, h3, h4 {
+    margin-top: 20px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0 20px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.next-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: #4b7bec;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#chat-box {
+    height: 400px;
+    overflow-y: scroll;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 10px;
+}
+
+/* basic layout */
+body{font-family: -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,Arial,sans-serif;background:#f6f8fb;color:#222}
+.nav-header{background:#fff;padding:12px 0;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
+.nav-container{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.logo a{font-weight:700;color:#333;text-decoration:none}
+.main-nav a{margin-left:12px;color:#666;text-decoration:none}
+.container{max-width:900px;margin:22px auto;padding:0 16px}
+.back-btn{position:fixed;left:12px;top:68px;background:#fff;border:1px solid #ddd;padding:6px 10px;border-radius:6px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+
+h2{margin:8px 0 14px}
+input, textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;background:#fff;box-sizing:border-box}
+.two-cols{display:flex;gap:12px}
+.two-cols > div{flex:1}
+.primary{display:inline-block;background:#4b7bec;color:#fff;padding:10px 14px;border-radius:8px;border:none;margin-top:12px}
+.btn{display:inline-block;background:#eee;padding:8px 12px;border-radius:6px;text-decoration:none;color:#333;margin-bottom:12px}
+.weights-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* chat styles */
+.chat-box{background:#fff;border:1px solid #e6e6e6;padding:12px;border-radius:10px;min-height:300px;max-height:60vh;overflow:auto}
+.bubble{display:inline-block;padding:10px 12px;border-radius:16px;margin:8px 0;max-width:80%}
+.bubble.user{background:#dcf8c6;margin-left:auto;text-align:left}
+.bubble.mom{background:#f1f0f0;margin-right:auto;text-align:left}
+.chat-input-area{display:flex;gap:8px;margin-top:12px}
+.chat-input-area input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+
+/* schedule list */
+.schedule-list{list-style:none;padding:0}
+.schedule-list li{background:#fff;border:1px solid #eee;padding:10px;border-radius:8px;margin-bottom:8px}
+.s-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.s-actions a, .s-actions button{margin-right:8px}
+.priority{color:#666;font-size:13px}
+
+/* ---- UI ズレ修正 ---- */
+
+/* 相談スタイルの下に余白を追加 */
+.check-group {
+    margin-bottom: 20px;
+}
+
+
+/* ラベル＋チェックボックスを縦位置そろえる */
+label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.4;
+}
+
+/* チェックボックスの高さを統一 */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+}
+
+/* チェックボックス群やセレクトが横並びの場合 */
+.setting-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* セレクトの高さがズレないように */
+select {
+    height: 42px;
+}
+
