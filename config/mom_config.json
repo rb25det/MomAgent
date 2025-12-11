@@ -1,0 +1,38 @@
+{
+  "user": {
+    "nickname": "motoki",
+    "gender": "男性",
+    "age": 21,
+    "grade": "院1年",
+    "role_status": "学生",
+    "life": {
+      "wake_time_weekday": "19:31",
+      "sleep_time_weekday": "19:31",
+      "wake_time_holiday": "19:31",
+      "sleep_time_holiday": "19:31",
+      "average_sleep_hours": 8.0,
+      "active_time_slots": [
+        "朝"
+      ]
+    },
+    "health": {
+      "breakfast_frequency_level": 2,
+      "exercise_frequency_per_week": 3
+    },
+    "topic_weights": {
+      "就活": 0.5
+    },
+    "worry_now": "就活"
+  },
+  "mother_model": {
+    "strict_kind": 0.3999999999999999,
+    "quiet_talkative": 0.0,
+    "dialect_type": "normal",
+    "listen_deeply": 1.0,
+    "give_clear_advice": 0.0,
+    "praise_a_lot": 0.0,
+    "topic_initiation_frequency": 1.0,
+    "topic_weight_seriousness": 0.2
+  },
+  "generated_model_name": "elyza-mom"
+}

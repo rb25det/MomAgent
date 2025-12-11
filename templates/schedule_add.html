@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}予定追加{% endblock %}
+
+{% block content %}
+<h2>予定追加</h2>
+
+<form method="POST">
+    <label>年-月-日</label>
+    <input type="date" name="date" required>
+
+    <label>時間</label>
+    <input type="time" name="time" required>
+
+    <label>内容</label>
+    <input type="text" name="content" required>
+
+    <label>重要度（1:高 / 2:中 / 3:低）</label>
+    <select name="priority">
+        <option value="1">1（高）</option>
+        <option value="2" selected>2（中）</option>
+        <option value="3">3（低）</option>
+    </select>
+
+    <label>リマインド回数（任意）</label>
+    <input type="number" name="remind_value" min="0" placeholder="例: 2">
+
+    <label>リマインド単位</label>
+    <select name="remind_unit">
+        <option value="hours">時間前</option>
+        <option value="days">日前</option>
+    </select>
+
+    <button class="primary" type="submit">登録する</button>
+</form>
+{% endblock %}
