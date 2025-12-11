@@ -2,45 +2,64 @@
 {% block title %}お母さん設定{% endblock %}
 
 {% block content %}
-<h2>お母さんの性格選択</h2>
+<h2>お母さんの性格設定</h2>
 
 <form method="POST" action="{{ url_for('mom_settings_page') }}">
-    
-    <label>タイプ（厳しい — 優しい）</label>
-    <input type="range" name="warmth_level" min="0" max="100" value="70">
 
-    <label>寡黙 — おしゃべり</label>
-    <input type="range" name="talkativeness" min="0" max="100" value="50">
+    <h3>キャラクター基本設定</h3>
+
+    <div class="slider-group">
+        <label>厳しい ←→ 優しい</label>
+        <input
+            type="range"
+            name="strict_kind"
+            min="-1"
+            max="1"
+            step="0.1"
+            value="0"
+        >
+    </div>
+
+    <div class="slider-group">
+        <label>寡黙 ←→ おしゃべり</label>
+        <input
+            type="range"
+            name="quiet_talkative"
+            min="-1"
+            max="1"
+            step="0.1"
+            value="0"
+        >
+    </div>
 
     <label>口調</label>
-    <select name="dialect">
-        <option value="standard">標準語</option>
+    <select name="dialect_type">
+        <option value="normal">標準語</option>
         <option value="kansai">関西弁</option>
         <option value="hakata">博多弁</option>
     </select>
 
-    <h4>相談スタイル（複数選択）</h4>
-
+    <h3>相談スタイル（複数選択可）</h3>
     <div class="check-group">
-        <label><input type="checkbox" name="style_listen" value="1"> じっくり話を聞く</label>
-        <label><input type="checkbox" name="style_direct" value="1"> はっきりアドバイス</label>
-        <label><input type="checkbox" name="style_praise" value="1"> とにかく褒める</label>
+        <label><input type="checkbox" name="listen_style" value="listen_deeply"> じっくり聞いてほしい</label>
+        <label><input type="checkbox" name="listen_style" value="give_clear_advice"> はっきりアドバイスしてほしい</label>
+        <label><input type="checkbox" name="listen_style" value="praise_a_lot"> とにかく褒めてほしい</label>
     </div>
 
-    <label>話題を振る頻度</label>
-    <select name="talk_frequency">
-        <option value="often">よく話したい</option>
-        <option value="sometimes">たまに</option>
-        <option value="rarely">本当にしんどい時だけ</option>
+    <label>話題を振ってくる頻度</label>
+    <select name="topic_initiation_frequency">
+        <option value="1.0">よく話したい</option>
+        <option value="0.5">たまに</option>
+        <option value="0.1">本当にしんどい時だけ</option>
     </select>
 
     <label>話題の重さ</label>
-    <select name="topic_heaviness">
-        <option value="light">軽めの雑談多め</option>
-        <option value="serious">しっかり相談多め</option>
-        <option value="half">半々</option>
+    <select name="topic_weight_seriousness">
+        <option value="0.2">軽めの雑談多め</option>
+        <option value="0.8">しっかり相談多め</option>
+        <option value="0.5">半々くらい</option>
     </select>
 
-    <button class="primary" type="submit">設定を保存してチャットへ</button>
+    <button class="primary" type="submit">この設定でお母さんAIを作る</button>
 </form>
 {% endblock %}

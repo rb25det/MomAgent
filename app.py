@@ -1,9 +1,9 @@
 # app.py
 
-from pathlib import Path
-from datetime import datetime
 import json
 import subprocess
+from pathlib import Path
+from datetime import datetime
 
 import requests
 from flask import (
@@ -16,10 +16,17 @@ from flask import (
     jsonify,
 )
 
+# builder.py を prompts パッケージから読む想定
+# プロジェクト構成:
+#   MomAgent/
+#     app.py
+#     prompts/
+#       __init__.py
+#       builder.py
 from prompts.builder import build_prompt
 
 # =========================
-# 基本設定（モデルまわり）
+# 基本設定
 # =========================
 
 OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
@@ -31,13 +38,12 @@ CONFIG_PATH = CONFIG_DIR / "mom_config.json"
 
 MODELFILE_PATH = Path("Modelfile")
 
-# Flask
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"  # 適当な文字列に変えてOK
+app.secret_key = "your_secret_key_here"  # 適当な値に変えてOK
 
 
 # =========================
-# セッション / 予定ヘルパ
+# helpers（セッション・予定）
 # =========================
 
 def init_session():
@@ -46,12 +52,11 @@ def init_session():
     if "mom_settings" not in session:
         session["mom_settings"] = {}
     if "schedules" not in session:
-        session["schedules"] = []  # list[dict]
+        session["schedules"] = []  # list of dicts
     if "chat_history" not in session:
         session["chat_history"] = []  # [{'role':'assistant'|'user','text':...}, ...]
     if "model_ready" not in session:
-        # モデルが生成済みかどうかのフラグ
-        session["model_ready"] = False
+        session["model_ready"] = False  # モデル生成済みかどうか
 
 
 def clear_chat_history():
@@ -61,18 +66,17 @@ def clear_chat_history():
 
 
 def sort_schedules_for_display(schedules):
-    """優先度→日付→時間の順でソート"""
+    # priority(1高,2中,3低) -> then date/time
     def keyfn(s):
         pr = int(s.get("priority", "3"))
         date = s.get("date", "9999-12-31")
         time = s.get("time", "23:59")
         return (pr, date, time)
-
     return sorted(schedules, key=keyfn)
 
 
 # =========================
-# Ollama API 呼び出し（チャット時）
+# Ollama API 呼び出し（チャット用）
 # =========================
 
 def ask(prompt: str) -> str:
@@ -117,133 +121,105 @@ PARAMETER num_ctx 8192
 
 # =========================
 # JSON 作成処理
-#   profile.html + mom_settings.html をマージして config を作る
+#   profile.html + mom_settings.html を合体して config を作る
+#   name / value は form.html に合わせてある
 # =========================
 
 def write_config_json(profile: dict, mom_form) -> dict:
     """
-    プロフィール + お母さん設定 から config dict を生成し、mom_config.json に保存
+    プロフィール（session に入っている dict）と
+    mom_settings.html から POST された form を合成して config dict を作る
     """
 
-    # --- 生活リズム / アクティブ時間帯 ---
+    # -------- ユーザ側 --------
+
+    # active_time_slots, topic_weights は複数選択
     active_raw = profile.get("active_time_slots") or []
     if isinstance(active_raw, str):
         active_slots = [active_raw]
     else:
-        active_slots = active_raw
+        active_slots = list(active_raw)
 
-    # --- 話題の好み ---
-    interest_raw = profile.get("interest_tags") or []
-    if isinstance(interest_raw, str):
-        interest_tags = [interest_raw]
+    topic_raw = profile.get("topic_weights") or []
+    if isinstance(topic_raw, str):
+        topics = [topic_raw]
     else:
-        interest_tags = interest_raw
+        topics = list(topic_raw)
 
-    topic_weights = {}
-    # スライダー weight_就活 などがあればそれを使う
-    for t in interest_tags:
-        key = t
-        w = profile.get(f"weight_{t}")
+    # numeric 系
+    def to_int_or_none(v):
+        if v is None or v == "":
+            return None
         try:
-            topic_weights[key] = float(w) if w is not None else 0.5
+            return int(v)
         except ValueError:
-            topic_weights[key] = 0.5
+            return None
 
-    # --- 朝食頻度（文字列 → 大まかな数値） ---
-    bf = profile.get("breakfast_frequency")
-    if bf == "ほぼ毎日":
-        breakfast_level = 2
-    elif bf == "たまに":
-        breakfast_level = 1
-    elif bf == "ほとんど食べない":
-        breakfast_level = 0
-    else:
-        breakfast_level = None
+    def to_float_or_none(v):
+        if v is None or v == "":
+            return None
+        try:
+            return float(v)
+        except ValueError:
+            return None
 
-    # --- 運動習慣（文字列 → 大まかな回数/週） ---
-    ex = profile.get("exercise_frequency")
-    if ex == "週3回以上":
-        ex_per_week = 3
-    elif ex == "週1〜2回":
-        ex_per_week = 1.5
-    elif ex == "週1回未満":
-        ex_per_week = 0.5
-    elif ex == "ほぼしない":
-        ex_per_week = 0
-    else:
-        ex_per_week = None
+    age = to_int_or_none(profile.get("age"))
+    avg_sleep = to_float_or_none(profile.get("average_sleep_hours"))
 
-    # --- お母さんの性格スライダーを -1〜1 に正規化 ---
-    try:
-        warmth = float(mom_form.get("warmth_level", 50))
-    except ValueError:
-        warmth = 50.0
-    # 0(厳しい)〜100(優しい) → -1〜+1 にマッピング
-    strict_kind = (warmth / 50.0) - 1.0
+    # 朝ごはん頻度（0 / 1 / 2）
+    breakfast_level = to_int_or_none(profile.get("breakfast_frequency"))
 
-    try:
-        talk = float(mom_form.get("talkativeness", 50))
-    except ValueError:
-        talk = 50.0
-    quiet_talkative = (talk / 50.0) - 1.0
+    # 運動習慣（週あたり回数）
+    exercise_per_week = to_int_or_none(profile.get("exercise_frequency_per_week"))
 
-    # --- 方言 ---
-    dialect_ui = mom_form.get("dialect", "standard")
-    if dialect_ui == "kansai":
-        dialect_type = "kansai"
-    elif dialect_ui == "hakata":
-        dialect_type = "hakata"
-    else:
-        dialect_type = "normal"
+    # -------- お母さんモデル側 --------
 
-    # --- 相談スタイル（チェックボックス） ---
-    listen_deeply = 1.0 if mom_form.get("style_listen") else 0.0
-    give_clear_advice = 1.0 if mom_form.get("style_direct") else 0.0
-    praise_a_lot = 1.0 if mom_form.get("style_praise") else 0.0
+    # slider: strict_kind, quiet_talkative（すでに -1〜1 の値で飛んでくる想定）
+    strict_kind = to_float_or_none(mom_form.get("strict_kind")) or 0.0
+    quiet_talkative = to_float_or_none(mom_form.get("quiet_talkative")) or 0.0
 
-    # --- 話題を振る頻度 ---
-    freq = mom_form.get("talk_frequency", "sometimes")
-    if freq == "often":
-        topic_initiation_frequency = 1.0
-    elif freq == "rarely":
-        topic_initiation_frequency = 0.1
-    else:
-        topic_initiation_frequency = 0.5
+    dialect_type = mom_form.get("dialect_type") or "normal"
 
-    # --- 話題の重さ ---
-    heaviness = mom_form.get("topic_heaviness", "half")
-    if heaviness == "light":
-        topic_weight_seriousness = 0.2
-    elif heaviness == "serious":
-        topic_weight_seriousness = 0.8
-    else:
-        topic_weight_seriousness = 0.5
+    listen_styles = mom_form.getlist("listen_style")
+    listen_deeply = 1.0 if "listen_deeply" in listen_styles else 0.0
+    give_clear_advice = 1.0 if "give_clear_advice" in listen_styles else 0.0
+    praise_a_lot = 1.0 if "praise_a_lot" in listen_styles else 0.0
+
+    topic_initiation_frequency = to_float_or_none(
+        mom_form.get("topic_initiation_frequency")
+    ) or 0.5
+    topic_weight_seriousness = to_float_or_none(
+        mom_form.get("topic_weight_seriousness")
+    ) or 0.5
 
     config = {
         "user": {
             "nickname": profile.get("nickname"),
             "gender": profile.get("gender"),
-            "age": int(profile["age"]) if profile.get("age") else None,
+            "age": age,
             "grade": profile.get("grade") or None,
-            # occupation をそのまま role_status として使う
-            "role_status": profile.get("occupation") or None,
+            "role_status": profile.get("role_status") or None,
+
             "life": {
                 "wake_time_weekday": profile.get("wake_time_weekday"),
                 "sleep_time_weekday": profile.get("sleep_time_weekday"),
                 "wake_time_holiday": profile.get("wake_time_holiday"),
                 "sleep_time_holiday": profile.get("sleep_time_holiday"),
-                "average_sleep_hours": float(profile["average_sleep_hours"])
-                if profile.get("average_sleep_hours")
-                else None,
+                "average_sleep_hours": avg_sleep,
                 "active_time_slots": active_slots,
             },
+
             "health": {
                 "breakfast_frequency_level": breakfast_level,
-                "exercise_frequency_per_week": ex_per_week,
+                "exercise_frequency_per_week": exercise_per_week,
             },
-            "topic_weights": topic_weights,
+
+            # checkbox 群をそのまま weight=1.0 で辞書化
+            "topic_weights": {t: 1.0 for t in topics},
+
             "worry_now": profile.get("worry_now") or "",
         },
+
         "mother_model": {
             "strict_kind": strict_kind,
             "quiet_talkative": quiet_talkative,
@@ -254,9 +230,11 @@ def write_config_json(profile: dict, mom_form) -> dict:
             "topic_initiation_frequency": topic_initiation_frequency,
             "topic_weight_seriousness": topic_weight_seriousness,
         },
+
         "generated_model_name": GENERATED_MODEL_NAME,
     }
 
+    # JSON として保存
     with CONFIG_PATH.open("w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
@@ -264,62 +242,58 @@ def write_config_json(profile: dict, mom_form) -> dict:
 
 
 # =========================
-# ルーティング
+# routes
 # =========================
 
 @app.route("/")
 def index():
-    # 起動時はチャット履歴だけリセットしてプロフィールへ
+    # ⭐ 起動時：セッションを初期化してチャット履歴だけリセット → プロフィールへ
     init_session()
     clear_chat_history()
-    # モデル準備フラグはそのまま（同じブラウザの再訪でも使えるように）
     return redirect(url_for("profile"))
 
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
-    """
-    プロフィール入力画面（UIチームの profile.html）
-    POST されたら session["profile"] に保存して /mom_settings へ。
-    """
     init_session()
     if request.method == "POST":
-        # 複数選択（active_time_slots, interest_tags）のため getlist を使う
+        # checkbox など複数値に対応するため getlist ベースで保存
         profile_data = {}
         for key in request.form.keys():
-            values = request.form.getlist(key)
-            if len(values) == 1:
-                profile_data[key] = values[0]
+            vals = request.form.getlist(key)
+            if len(vals) == 1:
+                profile_data[key] = vals[0]
             else:
-                profile_data[key] = values
+                profile_data[key] = vals
         session["profile"] = profile_data
+        session["model_ready"] = False  # プロフィール変えたら再生成が必要
         session.modified = True
-        # プロフィールを更新したので、モデルはまだ再生成されていない扱いにする
-        session["model_ready"] = False
         return redirect(url_for("mom_settings_page"))
     return render_template("profile.html")
 
 
 @app.route("/mom_settings", methods=["GET", "POST"])
 def mom_settings_page():
-    """
-    お母さんの性格設定画面（mom_settings.html）
-    POST されたタイミングで:
-      - JSON生成
-      - Modelfile生成
-      - ollama create
-      を行い、成功したら model_ready=True にして /chat へ遷移。
-    """
     init_session()
     if request.method == "POST":
-        session["mom_settings"] = request.form.to_dict(flat=True)
+        # mom_settings も一応保存（ナビなどで使う場合用）
+        mom_settings_data = {}
+        for key in request.form.keys():
+            vals = request.form.getlist(key)
+            if len(vals) == 1:
+                mom_settings_data[key] = vals[0]
+            else:
+                mom_settings_data[key] = vals
+        session["mom_settings"] = mom_settings_data
+        session["model_ready"] = False
         session.modified = True
 
-        # いったん「まだ準備中」にしておく
-        session["model_ready"] = False
+        # プロフィールがない場合は戻す
+        profile_data = session.get("profile") or {}
+        if not profile_data:
+            return redirect(url_for("profile"))
 
-        # 1. JSON 作成（profile + mom_settings）
-        profile_data = session.get("profile", {})
+        # 1. JSON 作成
         config = write_config_json(profile_data, request.form)
 
         # 2. Modelfile 生成
@@ -333,17 +307,17 @@ def mom_settings_page():
             )
         except subprocess.CalledProcessError as e:
             print("ollama create error:", e)
-            # モデル準備フラグは False のまま
+            session["model_ready"] = False
+            session.modified = True
             return (
-                "<p>モデル生成に失敗しました。ollama create のログを確認してください。</p>",
+                "<p>モデル生成に失敗しました。`ollama create` のログを確認してください。</p>",
                 500,
             )
 
-        # 成功したのでモデル準備完了
-        session["model_ready"] = True
-
-        # 新しい設定になったのでチャット履歴をクリア
+        # 成功したらチャット履歴をリセットしてフラグ ON
         clear_chat_history()
+        session["model_ready"] = True
+        session.modified = True
         return redirect(url_for("chat_page"))
 
     return render_template("mom_settings.html")
@@ -351,20 +325,17 @@ def mom_settings_page():
 
 @app.route("/chat", methods=["GET"])
 def chat_page():
-    """
-    チャット画面（UIチームの chat.html）
-    初回アクセス時だけ「今日はどうするん？まず予定教えて。」を履歴に入れる。
-    モデル未生成のときは /mom_settings にリダイレクト。
-    """
     init_session()
+    # モデルがまだできていなければ mom_settings に飛ばす
     if not session.get("model_ready"):
-        # モデルがまだ出来ていない場合は設定画面へ戻す
         return redirect(url_for("mom_settings_page"))
 
+    # 初回だけお母さんの第一声を入れる
     if not session.get("chat_history"):
         welcome = "今日はどうするん？まず予定教えて。"
         session["chat_history"].append({"role": "assistant", "text": welcome})
         session.modified = True
+
     return render_template("chat.html", history=session.get("chat_history"))
 
 
@@ -374,35 +345,29 @@ def chat_page():
 
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
-    """
-    chat.html から fetch されるAPI。
-    UI側は {ok:true, reply:"..."} を期待している。
-    """
     init_session()
 
-    # モデルがまだ出来ていない場合はエラー返却（フロントで表示可）
+    # モデルがまだならエラー返し（フロントでメッセージ表示用）
     if not session.get("model_ready"):
         return jsonify({"ok": False, "error": "model_not_ready"}), 400
 
     data = request.get_json() or {}
     user_message = data.get("message", "").strip()
     if not user_message:
-        return jsonify({"ok": False, "error": "no message"}), 400
+        return jsonify({"ok": False, "error": "no_message"}), 400
 
-    # 履歴に追加
     session["chat_history"].append({"role": "user", "text": user_message})
 
-    # Ollama で返信
     reply = ask(user_message)
 
     session["chat_history"].append({"role": "assistant", "text": reply})
     session.modified = True
 
-    return jsonify({"ok": True, "reply": reply, "history": session.get("chat_history")})
+    return jsonify({"ok": True, "reply": reply, "history": session["chat_history"]})
 
 
 # -------------------------
-# schedule 関連
+# schedule
 # -------------------------
 
 @app.route("/schedule_list")
@@ -470,18 +435,13 @@ def schedule_delete(index):
 
 
 # -------------------------
-# Dev only: 全セッションリセット
+# Dev only
 # -------------------------
 
 @app.route("/reset_all")
 def reset_all():
     session.clear()
     return "cleared"
-
-
-# =========================
-# エントリポイント
-# =========================
 
 if __name__ == "__main__":
     import os
@@ -491,8 +451,9 @@ if __name__ == "__main__":
     def open_browser():
         webbrowser.open_new("http://127.0.0.1:5000/")
 
-    # リローダーの子プロセスではブラウザを開かないようにする
+    # Flask のリローダー稼働時のみブラウザを開く
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         threading.Timer(1.0, open_browser).start()
 
+    # use_reloader=True（デフォルト）に戻すこと
     app.run(host="127.0.0.1", port=5000, debug=True)
