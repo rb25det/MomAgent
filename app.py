@@ -104,7 +104,7 @@ def ask(prompt: str) -> str:
         return r.json().get("response", "").strip()
     except requests.exceptions.RequestException as e:
         print("LLM error:", e)
-        return "ごめん、今ちょっとつながらへんみたい。ollama が起動してるか確認してみて。"
+        return "ごめん、接続がうまくいかないみたい。ollama が起動しているか確認してみて。"
 
 
 # =========================
@@ -258,7 +258,7 @@ def index():
     init_session()
     # 初期設定完了済みなら start へ（→ チャット開始画面）
     if is_setup_complete():
-        return redirect(url_for("start_page"))
+        return redirect(url_for("chat_page"))
     return redirect(url_for("profile"))
 
 
@@ -347,7 +347,7 @@ def chat_page():
         return redirect(url_for("profile"))
 
     if not session.get("chat_history"):
-        session["chat_history"].append({"role": "assistant", "text": "今日はどうするん？まず予定教えて。"})
+        session["chat_history"].append({"role": "assistant", "text": "今日はどうするの？まずは予定を教えて。"})
         session.modified = True
 
     return render_template("chat.html", history=session.get("chat_history"))

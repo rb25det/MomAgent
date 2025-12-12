@@ -11,11 +11,6 @@ body{
   padding:0;
 }
 
-/* タブ表示時：下部に余白を確保 */
-body.has-tabs .container{
-  padding-bottom:84px;
-}
-
 /* =========
    Header
 ========= */
@@ -38,15 +33,8 @@ body.has-tabs .container{
   padding:0 16px;
 }
 
-/* 初期セットアップ画面（model未生成）は中央寄せ */
-body.setup-flow .nav-container{
-  justify-content:center;
-}
-
-/* 設定確認・変更画面は通常レイアウト */
-body.settings-screen .nav-container{
-  justify-content:space-between;
-}
+body.setup-flow .nav-container{ justify-content:center; }
+body.settings-screen .nav-container{ justify-content:space-between; }
 
 .logo a{
   font-weight:700;
@@ -55,7 +43,6 @@ body.settings-screen .nav-container{
   font-size:18px;
 }
 
-/* 左上の戻るリンク */
 .back-link{
   display:inline-flex;
   align-items:center;
@@ -69,24 +56,15 @@ body.settings-screen .nav-container{
   font-weight:600;
   font-size:14px;
 }
-
-.back-link:hover{
-  background:#f3f6ff;
-}
+.back-link:hover{ background:#f3f6ff; }
 
 /* =========
    Gear menu
 ========= */
-.header-actions{
-  position:relative;
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
+.header-actions{ position:relative; display:flex; align-items:center; gap:8px; }
 
 .gear-btn{
-  width:40px;
-  height:40px;
+  width:40px; height:40px;
   border-radius:10px;
   border:1px solid #e6e6e6;
   background:#fff;
@@ -108,10 +86,7 @@ body.settings-screen .nav-container{
   display:none;
   z-index:50;
 }
-
-.gear-menu.open{
-  display:block;
-}
+.gear-menu.open{ display:block; }
 
 .gear-menu a{
   display:block;
@@ -121,24 +96,18 @@ body.settings-screen .nav-container{
   text-decoration:none;
   font-size:14px;
 }
+.gear-menu a:hover{ background:#f3f6ff; }
 
-.gear-menu a:hover{
-  background:#f3f6ff;
-}
-
-.menu-sep{
-  height:1px;
-  background:#eee;
-  margin:6px 0;
-}
+.menu-sep{ height:1px; background:#eee; margin:6px 0; }
 
 /* =========
-   Main container
+   Container
 ========= */
 .container{
   max-width:1200px;
   margin:24px auto;
   padding:0 16px;
+  box-sizing:border-box;
 }
 
 /* =========
@@ -150,6 +119,9 @@ body.start-screen .container{
   display:flex;
   align-items:center;
   justify-content:center;
+  margin:0 auto;
+  padding:16px;
+  box-sizing:border-box;
 }
 
 .start-card{
@@ -161,27 +133,10 @@ body.start-screen .container{
   box-shadow:0 0 10px rgba(0,0,0,0.08);
   text-align:center;
 }
-
-.start-card h2{
-  margin-top:0;
-}
+.start-card h2{ margin-top:0; }
 
 /* =========
-   Common blocks
-========= */
-.section{
-  background:#fff;
-  padding:20px;
-  margin-bottom:20px;
-  border-radius:12px;
-  box-shadow:0 0 10px rgba(0,0,0,0.08);
-}
-
-h2{ margin:8px 0 16px; }
-h3, h4{ margin-top:24px; }
-
-/* =========
-   Form controls
+   Forms
 ========= */
 input, textarea, select{
   width:100%;
@@ -192,25 +147,12 @@ input, textarea, select{
   background:#fff;
   box-sizing:border-box;
 }
+select{ height:42px; }
 
-select{
-  height:42px;
-}
+.two-cols{ display:flex; gap:16px; }
+.two-cols > div{ flex:1; }
 
-.two-cols{
-  display:flex;
-  gap:16px;
-}
-
-.two-cols > div{
-  flex:1;
-}
-
-label{
-  display:block;
-  font-size:14px;
-  margin-bottom:6px;
-}
+label{ display:block; font-size:14px; margin-bottom:6px; }
 
 .primary{
   display:inline-block;
@@ -223,10 +165,7 @@ label{
   text-decoration:none;
   font-weight:600;
 }
-
-.primary:active{
-  transform:translateY(1px);
-}
+.primary:active{ transform:translateY(1px); }
 
 .btn{
   display:inline-block;
@@ -237,16 +176,12 @@ label{
   color:#333;
 }
 
-/* =========
-   Checkbox group（横並び）
-========= */
 .check-group{
   display:flex;
   flex-wrap:wrap;
   gap:10px 18px;
   margin-bottom:20px;
 }
-
 .check-group label{
   display:inline-flex;
   align-items:center;
@@ -255,7 +190,6 @@ label{
   cursor:pointer;
   white-space:nowrap;
 }
-
 .check-group input[type="checkbox"],
 input[type="checkbox"]{
   width:auto;
@@ -264,13 +198,70 @@ input[type="checkbox"]{
 }
 
 /* =========
+   Tabs
+========= */
+.bottom-tabs{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  height:64px;
+  background:#fff;
+  border-top:1px solid #eee;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:20;
+  box-shadow:0 -6px 18px rgba(0,0,0,0.06);
+}
+.bottom-tabs .tab{
+  flex:1;
+  text-align:center;
+  text-decoration:none;
+  color:#666;
+  font-weight:600;
+  padding:10px 0;
+}
+.bottom-tabs .tab.active{ color:#4b7bec; }
+
+/* =========
+   Tabs表示中：画面固定（基本）
+========= */
+body.has-tabs{
+  height:100vh;
+  overflow:hidden;
+}
+
+/* ヘッダー下〜タブ上の表示領域（共通の高さ枠） */
+body.has-tabs .main-area{
+  height:calc(100vh - 64px - 65px); /* 64=タブ, 65=ヘッダー概算 */
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ===== schedule：main-areaをスクロール ===== */
+body.schedule-screen .main-area{
+  overflow-y:auto;
+}
+body.schedule-screen .container{
+  margin:0 auto;
+  padding:16px;
+}
+
+/* ===== chat：main-areaはスクロール禁止、chat-boxだけスクロール ===== */
+body.chat-screen .main-area{
+  overflow:hidden;
+}
+body.chat-screen .container{
+  margin:0 auto;
+  padding:16px;
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  box-sizing:border-box;
+}
+
+/* =========
    Chat (LINE風)
 ========= */
 #chat-box.chat-box{
-  height:calc(100vh - 310px);
-  min-height:520px;
-  max-height:900px;
-  overflow:auto;
   background:#fff;
   border:1px solid #e6e6e6;
   padding:14px;
@@ -278,6 +269,12 @@ input[type="checkbox"]{
   display:flex;
   flex-direction:column;
   gap:10px;
+
+  /* chatでは flexで余り全部を使う */
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 
 .bubble{
@@ -303,12 +300,12 @@ input[type="checkbox"]{
   border-bottom-left-radius:6px;
 }
 
-/* chat input bar */
 .chat-input-area{
   display:flex;
   align-items:center;
   gap:10px;
   margin-top:12px;
+  flex:0 0 auto;
 }
 
 .chat-input-area input{
@@ -329,37 +326,6 @@ input[type="checkbox"]{
   color:#fff;
   font-weight:600;
   cursor:pointer;
-}
-
-/* =========
-   Bottom Tabs
-========= */
-.bottom-tabs{
-  position:fixed;
-  left:0;
-  right:0;
-  bottom:0;
-  height:64px;
-  background:#fff;
-  border-top:1px solid #eee;
-  display:flex;
-  justify-content:space-around;
-  align-items:center;
-  z-index:20;
-  box-shadow:0 -6px 18px rgba(0,0,0,0.06);
-}
-
-.bottom-tabs .tab{
-  flex:1;
-  text-align:center;
-  text-decoration:none;
-  color:#666;
-  font-weight:600;
-  padding:10px 0;
-}
-
-.bottom-tabs .tab.active{
-  color:#4b7bec;
 }
 
 /* =========

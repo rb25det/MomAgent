@@ -1,13 +1,13 @@
 {
   "user": {
-    "nickname": "モトキ",
+    "nickname": "banki",
     "gender": "male",
     "age": 22,
     "grade": "master_1",
     "role_status": "student",
     "life": {
-      "wake_time_weekday": "16:09",
-      "sleep_time_weekday": "16:09",
+      "wake_time_weekday": "23:17",
+      "sleep_time_weekday": "23:17",
       "wake_time_holiday": "",
       "sleep_time_holiday": "",
       "average_sleep_hours": 8.0,
@@ -18,16 +18,19 @@
     },
     "health": {
       "breakfast_frequency_level": 2,
-      "exercise_frequency_per_week": null
+      "exercise_frequency_per_week": 3
     },
-    "topic_weights": {},
+    "topic_weights": {
+      "job_hunting": 1.0,
+      "health": 1.0
+    },
     "worry_now": "就活"
   },
   "mother_model": {
-    "strict_kind": 0.0,
+    "strict_kind": 0.8,
     "quiet_talkative": 0.0,
-    "dialect_type": "normal",
-    "listen_deeply": 0.0,
+    "dialect_type": "kansai",
+    "listen_deeply": 1.0,
     "give_clear_advice": 0.0,
     "praise_a_lot": 0.0,
     "topic_initiation_frequency": 0.5,
