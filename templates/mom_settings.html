@@ -1,65 +1,56 @@
 {% extends "base.html" %}
-{% block title %}お母さん設定{% endblock %}
+{% block title %}お母さんの性格設定{% endblock %}
 
 {% block content %}
+{% set m = session.get('mom_settings', {}) %}
+
 <h2>お母さんの性格設定</h2>
 
 <form method="POST" action="{{ url_for('mom_settings_page') }}">
 
-    <h3>キャラクター基本設定</h3>
+  <h3>基本性格</h3>
 
-    <div class="slider-group">
-        <label>厳しい ←→ 優しい</label>
-        <input
-            type="range"
-            name="strict_kind"
-            min="-1"
-            max="1"
-            step="0.1"
-            value="0"
-        >
-    </div>
+  <label>厳しい ←→ 優しい</label>
+  <input type="range" name="strict_kind" min="-1" max="1" step="0.1"
+         value="{{ m.get('strict_kind','0') }}">
 
-    <div class="slider-group">
-        <label>寡黙 ←→ おしゃべり</label>
-        <input
-            type="range"
-            name="quiet_talkative"
-            min="-1"
-            max="1"
-            step="0.1"
-            value="0"
-        >
-    </div>
+  <label>寡黙 ←→ おしゃべり</label>
+  <input type="range" name="quiet_talkative" min="-1" max="1" step="0.1"
+         value="{{ m.get('quiet_talkative','0') }}">
 
-    <label>口調</label>
-    <select name="dialect_type">
-        <option value="normal">標準語</option>
-        <option value="kansai">関西弁</option>
-        <option value="hakata">博多弁</option>
-    </select>
+  <label>口調</label>
+  {% set dia = m.get('dialect_type','normal') %}
+  <select name="dialect_type">
+    <option value="normal" {% if dia=='normal' %}selected{% endif %}>標準語</option>
+    <option value="kansai" {% if dia=='kansai' %}selected{% endif %}>関西弁</option>
+    <option value="hakata" {% if dia=='hakata' %}selected{% endif %}>博多弁</option>
+  </select>
 
-    <h3>相談スタイル（複数選択可）</h3>
-    <div class="check-group">
-        <label><input type="checkbox" name="listen_style" value="listen_deeply"> じっくり聞いてほしい</label>
-        <label><input type="checkbox" name="listen_style" value="give_clear_advice"> はっきりアドバイスしてほしい</label>
-        <label><input type="checkbox" name="listen_style" value="praise_a_lot"> とにかく褒めてほしい</label>
-    </div>
+  <h3>相談スタイル（複数選択）</h3>
+  {% set ls = m.get('listen_style', []) %}
+  <div class="check-group">
+    <label><input type="checkbox" name="listen_style" value="listen_deeply" {% if 'listen_deeply' in ls %}checked{% endif %}> じっくり聞いてほしい</label>
+    <label><input type="checkbox" name="listen_style" value="give_clear_advice" {% if 'give_clear_advice' in ls %}checked{% endif %}> はっきりアドバイス</label>
+    <label><input type="checkbox" name="listen_style" value="praise_a_lot" {% if 'praise_a_lot' in ls %}checked{% endif %}> とにかく褒めて</label>
+  </div>
 
-    <label>話題を振ってくる頻度</label>
-    <select name="topic_initiation_frequency">
-        <option value="1.0">よく話したい</option>
-        <option value="0.5">たまに</option>
-        <option value="0.1">本当にしんどい時だけ</option>
-    </select>
+  <label>話題を振ってくる頻度</label>
+  {% set tif = m.get('topic_initiation_frequency','0.5') %}
+  <select name="topic_initiation_frequency">
+    <option value="1.0" {% if tif=='1.0' %}selected{% endif %}>よく話す</option>
+    <option value="0.5" {% if tif=='0.5' %}selected{% endif %}>たまに</option>
+    <option value="0.1" {% if tif=='0.1' %}selected{% endif %}>最小限</option>
+  </select>
 
-    <label>話題の重さ</label>
-    <select name="topic_weight_seriousness">
-        <option value="0.2">軽めの雑談多め</option>
-        <option value="0.8">しっかり相談多め</option>
-        <option value="0.5">半々くらい</option>
-    </select>
+  <label>話題の重さ</label>
+  {% set tws = m.get('topic_weight_seriousness','0.5') %}
+  <select name="topic_weight_seriousness">
+    <option value="0.2" {% if tws=='0.2' %}selected{% endif %}>軽め</option>
+    <option value="0.5" {% if tws=='0.5' %}selected{% endif %}>半々</option>
+    <option value="0.8" {% if tws=='0.8' %}selected{% endif %}>しっかり</option>
+  </select>
 
-    <button class="primary" type="submit">この設定でお母さんAIを作る</button>
+  <button class="primary" type="submit">この設定で保存（モデル更新）</button>
+  
 </form>
 {% endblock %}

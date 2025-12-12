@@ -1,31 +1,75 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}お母さんAI{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="UTF-8">
+  <title>{% block title %}お母さんAI{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
-<body>
+
+{# tab を表示しない画面 #}
+{% set no_tabs_paths = ['/start', '/profile', '/mom_settings'] %}
+{% set show_tabs = session.get('model_ready') and (request.path not in no_tabs_paths) %}
+
+{# 設定確認・変更画面（モデル構築後に開く画面） #}
+{% set on_settings = session.get('model_ready') and (request.path in ['/profile', '/mom_settings']) %}
+
+<body class="
+  {% if show_tabs %}
+    has-tabs
+  {% elif request.path == '/start' %}
+    start-screen
+  {% elif on_settings %}
+    settings-screen
+  {% else %}
+    setup-flow
+  {% endif %}
+">
 <header class="nav-header">
-    <div class="nav-container">
-        <div class="logo"><a href="{{ url_for('profile') }}">お母さんAI</a></div>
-        <nav class="main-nav">
-            <a href="{{ url_for('profile') }}">プロフィール</a>
-            <a href="{{ url_for('mom_settings_page') }}">お母さん設定</a>
-            <a href="{{ url_for('chat_page') }}">チャット</a>
-            <a href="{{ url_for('schedule_list') }}">予定一覧</a>
-        </nav>
+  <div class="nav-container">
+
+    {# 左上：戻る（設定確認画面のときだけ） #}
+    {% if on_settings %}
+      <a class="back-link" href="{{ url_for('chat_page') }}">← 戻る</a>
+    {% endif %}
+
+    <div class="logo">
+      {% if session.get('model_ready') %}
+        <a href="{{ url_for('chat_page') }}">お母さんAI</a>
+      {% else %}
+        <a href="{{ url_for('profile') }}">お母さんAI</a>
+      {% endif %}
     </div>
+
+    {% if session.get('model_ready') %}
+      <div class="header-actions">
+        <button class="gear-btn" type="button" data-gear-toggle>⚙</button>
+        <div class="gear-menu" data-gear-menu>
+          <a href="{{ url_for('profile') }}">プロフィールを確認・変更</a>
+          <a href="{{ url_for('mom_settings_page') }}">お母さんの性格を確認・変更</a>
+          <div class="menu-sep"></div>
+          <a href="{{ url_for('reset_all') }}">（開発用）初期化</a>
+        </div>
+      </div>
+    {% endif %}
+  </div>
 </header>
 
-<button class="back-btn" onclick="history.back()">← 戻る</button>
-
 <main class="main-area">
-    <div class="container">
-        {% block content %}{% endblock %}
-    </div>
+  <div class="container">
+    {% block content %}{% endblock %}
+  </div>
 </main>
+
+{% if show_tabs %}
+  {% set is_schedule = request.path.startswith('/schedule') %}
+  <nav class="bottom-tabs">
+    <a class="tab {% if request.path == '/chat' %}active{% endif %}"
+       href="{{ url_for('chat_page') }}">💬 チャット</a>
+    <a class="tab {% if is_schedule %}active{% endif %}"
+       href="{{ url_for('schedule_list') }}">📅 予定</a>
+  </nav>
+{% endif %}
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>

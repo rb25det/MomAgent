@@ -2,138 +2,135 @@
 {% block title %}プロフィール登録{% endblock %}
 
 {% block content %}
+{% set p = session.get('profile', {}) %}
+
 <h2>プロフィール登録</h2>
 
 <form method="POST" action="{{ url_for('profile') }}">
-    <h3>基本情報</h3>
-    <label>ニックネーム</label>
-    <input
-        type="text"
-        name="nickname"
-        placeholder="ニックネーム"
-        required
-        value="{{ session.get('profile',{}).get('nickname','') }}"
-    >
 
-    <label>性別（任意）</label>
-    <select name="gender">
-        <option value="none">選択しない</option>
-        <option value="male">男性</option>
-        <option value="female">女性</option>
-        <option value="other">その他</option>
-    </select>
+  <h3>基本情報</h3>
 
-    <div class="two-cols">
-        <div>
-            <label>年齢</label>
-            <input
-                type="number"
-                name="age"
-                min="10"
-                max="80"
-                value="{{ session.get('profile',{}).get('age','') }}"
-            >
-        </div>
-        <div>
-            <label>学年（学生の場合）</label>
-            <select name="grade">
-                <option value="">選択なし</option>
-                <option value="high_1">高校1年</option>
-                <option value="high_2">高校2年</option>
-                <option value="high_3">高校3年</option>
-                <option value="college_1">大学1年</option>
-                <option value="college_2">大学2年</option>
-                <option value="college_3">大学3年</option>
-                <option value="college_4">大学4年</option>
-                <option value="master_1">院1年</option>
-                <option value="master_2">院2年</option>
-                <option value="graduate">既卒</option>
-            </select>
-        </div>
+  <label>ニックネーム</label>
+  <input type="text" name="nickname" required value="{{ p.get('nickname','') }}">
+
+  <label>性別（任意）</label>
+  {% set gender = p.get('gender','none') %}
+  <select name="gender">
+    <option value="none" {% if gender=='none' %}selected{% endif %}>選択しない</option>
+    <option value="male" {% if gender=='male' %}selected{% endif %}>男性</option>
+    <option value="female" {% if gender=='female' %}selected{% endif %}>女性</option>
+    <option value="other" {% if gender=='other' %}selected{% endif %}>その他</option>
+  </select>
+
+  <div class="two-cols">
+    <div>
+      <label>年齢</label>
+      <input type="number" name="age" min="10" max="80" value="{{ p.get('age','') }}">
     </div>
-
-    <label>職業</label>
-    <select name="role_status">
-        <option value="student">学生</option>
-        <option value="worker">社会人</option>
-        <option value="parttime">アルバイト</option>
-        <option value="others">その他</option>
-    </select>
-
-    <h3>生活リズム</h3>
-    <div class="two-cols">
-        <div>
-            <label>平日の起床時間</label>
-            <input type="time" name="wake_time_weekday">
-        </div>
-        <div>
-            <label>平日の就寝時間</label>
-            <input type="time" name="sleep_time_weekday">
-        </div>
+    <div>
+      <label>学年（学生の場合）</label>
+      {% set grade = p.get('grade','') %}
+      <select name="grade">
+        <option value="" {% if grade=='' %}selected{% endif %}>選択なし</option>
+        <option value="high_1" {% if grade=='high_1' %}selected{% endif %}>高校1年</option>
+        <option value="high_2" {% if grade=='high_2' %}selected{% endif %}>高校2年</option>
+        <option value="high_3" {% if grade=='high_3' %}selected{% endif %}>高校3年</option>
+        <option value="college_1" {% if grade=='college_1' %}selected{% endif %}>大学1年</option>
+        <option value="college_2" {% if grade=='college_2' %}selected{% endif %}>大学2年</option>
+        <option value="college_3" {% if grade=='college_3' %}selected{% endif %}>大学3年</option>
+        <option value="college_4" {% if grade=='college_4' %}selected{% endif %}>大学4年</option>
+        <option value="master_1" {% if grade=='master_1' %}selected{% endif %}>院1年</option>
+        <option value="master_2" {% if grade=='master_2' %}selected{% endif %}>院2年</option>
+        <option value="graduate" {% if grade=='graduate' %}selected{% endif %}>既卒</option>
+      </select>
     </div>
+  </div>
 
-    <div class="two-cols">
-        <div>
-            <label>休日の起床時間</label>
-            <input type="time" name="wake_time_holiday">
-        </div>
-        <div>
-            <label>休日の就寝時間</label>
-            <input type="time" name="sleep_time_holiday">
-        </div>
+  <label>職業</label>
+  {% set role = p.get('role_status','student') %}
+  <select name="role_status">
+    <option value="student" {% if role=='student' %}selected{% endif %}>学生</option>
+    <option value="worker" {% if role=='worker' %}selected{% endif %}>社会人</option>
+    <option value="parttime" {% if role=='parttime' %}selected{% endif %}>アルバイト</option>
+    <option value="others" {% if role=='others' %}selected{% endif %}>その他</option>
+  </select>
+
+  <h3>生活リズム</h3>
+
+  <div class="two-cols">
+    <div>
+      <label>平日の起床時間</label>
+      <input type="time" name="wake_time_weekday" value="{{ p.get('wake_time_weekday','') }}">
     </div>
-
-    <label>1日の平均睡眠時間（時間）</label>
-    <input
-        type="number"
-        step="0.5"
-        min="0"
-        max="24"
-        name="average_sleep_hours"
-    >
-
-    <h4>よく使う時間帯（複数選択可）</h4>
-    <div class="check-group">
-        <label><input type="checkbox" name="active_time_slots" value="morning"> 朝</label>
-        <label><input type="checkbox" name="active_time_slots" value="noon"> 昼</label>
-        <label><input type="checkbox" name="active_time_slots" value="evening"> 夕方</label>
-        <label><input type="checkbox" name="active_time_slots" value="night"> 夜</label>
-        <label><input type="checkbox" name="active_time_slots" value="midnight"> 深夜</label>
+    <div>
+      <label>平日の就寝時間</label>
+      <input type="time" name="sleep_time_weekday" value="{{ p.get('sleep_time_weekday','') }}">
     </div>
+  </div>
 
-    <h3>就活・将来</h3>
-    <label>今一番不安なこと（短文）</label>
-    <textarea name="worry_now" rows="2"></textarea>
-
-    <h3>健康</h3>
-    <label>朝ごはんを食べる頻度</label>
-    <select name="breakfast_frequency">
-        <option value="2">ほぼ毎日</option>
-        <option value="1">たまに</option>
-        <option value="0">ほとんど食べない</option>
-    </select>
-
-    <label>運動習慣（週あたりの回数）</label>
-    <input
-        type="number"
-        name="exercise_frequency_per_week"
-        min="0"
-        max="7"
-    >
-
-    <h3>話題の好み（複数選択）</h3>
-    <p>よく話したいテーマ（複数選択可）</p>
-    <div class="check-group">
-        <label><input type="checkbox" name="topic_weights" value="job_hunting"> 就活</label>
-        <label><input type="checkbox" name="topic_weights" value="future"> 将来</label>
-        <label><input type="checkbox" name="topic_weights" value="health"> 健康</label>
-        <label><input type="checkbox" name="topic_weights" value="life_rhythm"> 生活リズム</label>
-        <label><input type="checkbox" name="topic_weights" value="money"> お金</label>
-        <label><input type="checkbox" name="topic_weights" value="love"> 恋愛</label>
-        <label><input type="checkbox" name="topic_weights" value="school"> 学校</label>
-        <label><input type="checkbox" name="topic_weights" value="parttime_job"> バイト</label>
+  <div class="two-cols">
+    <div>
+      <label>休日の起床時間</label>
+      <input type="time" name="wake_time_holiday" value="{{ p.get('wake_time_holiday','') }}">
     </div>
+    <div>
+      <label>休日の就寝時間</label>
+      <input type="time" name="sleep_time_holiday" value="{{ p.get('sleep_time_holiday','') }}">
+    </div>
+  </div>
 
-    <button class="primary" type="submit">プロフィールを保存して次へ</button>
+  <label>1日の平均睡眠時間（時間）</label>
+  <input type="number" step="0.5" min="0" max="24"
+         name="average_sleep_hours"
+         value="{{ p.get('average_sleep_hours','') }}">
+
+  <h4>よく使う時間帯（複数選択可）</h4>
+  {% set active = p.get('active_time_slots', []) %}
+  <div class="check-group">
+    <label><input type="checkbox" name="active_time_slots" value="morning" {% if 'morning' in active %}checked{% endif %}> 朝</label>
+    <label><input type="checkbox" name="active_time_slots" value="noon" {% if 'noon' in active %}checked{% endif %}> 昼</label>
+    <label><input type="checkbox" name="active_time_slots" value="evening" {% if 'evening' in active %}checked{% endif %}> 夕方</label>
+    <label><input type="checkbox" name="active_time_slots" value="night" {% if 'night' in active %}checked{% endif %}> 夜</label>
+    <label><input type="checkbox" name="active_time_slots" value="midnight" {% if 'midnight' in active %}checked{% endif %}> 深夜</label>
+  </div>
+
+  <h3>就活・将来</h3>
+  <label>今一番不安なこと</label>
+  <textarea name="worry_now" rows="2">{{ p.get('worry_now','') }}</textarea>
+
+  <h3>健康</h3>
+  {% set bf = p.get('breakfast_frequency','') %}
+  <label>朝ごはんを食べる頻度</label>
+  <select name="breakfast_frequency">
+    <option value="2" {% if bf=='2' %}selected{% endif %}>ほぼ毎日</option>
+    <option value="1" {% if bf=='1' %}selected{% endif %}>たまに</option>
+    <option value="0" {% if bf=='0' %}selected{% endif %}>ほとんど食べない</option>
+  </select>
+
+  <label>運動習慣（週あたり）</label>
+  <input type="number" name="exercise_frequency_per_week" min="0" max="7"
+         value="{{ p.get('exercise_frequency_per_week','') }}">
+
+  <h3>話題の好み（複数選択）</h3>
+  {% set topics = p.get('topic_weights', []) %}
+  <div class="check-group">
+    <label><input type="checkbox" name="topic_weights" value="job_hunting" {% if 'job_hunting' in topics %}checked{% endif %}> 就活</label>
+    <label><input type="checkbox" name="topic_weights" value="future" {% if 'future' in topics %}checked{% endif %}> 将来</label>
+    <label><input type="checkbox" name="topic_weights" value="health" {% if 'health' in topics %}checked{% endif %}> 健康</label>
+    <label><input type="checkbox" name="topic_weights" value="life_rhythm" {% if 'life_rhythm' in topics %}checked{% endif %}> 生活リズム</label>
+    <label><input type="checkbox" name="topic_weights" value="money" {% if 'money' in topics %}checked{% endif %}> お金</label>
+    <label><input type="checkbox" name="topic_weights" value="love" {% if 'love' in topics %}checked{% endif %}> 恋愛</label>
+    <label><input type="checkbox" name="topic_weights" value="school" {% if 'school' in topics %}checked{% endif %}> 学校</label>
+    <label><input type="checkbox" name="topic_weights" value="parttime_job" {% if 'parttime_job' in topics %}checked{% endif %}> バイト</label>
+  </div>
+
+  <button class="primary" type="submit">
+    {% if session.get('model_ready') %}
+      この設定で保存（モデル更新）
+    {% else %}
+      保存して次へ
+    {% endif %}
+  </button>
+  
 </form>
 {% endblock %}

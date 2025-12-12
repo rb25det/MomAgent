@@ -1,30 +1,28 @@
-function sendMessage() {
-    const input = document.getElementById("user-input");
-    const box = document.getElementById("chat-box");
+// ==============================
+// 共通スクリプト（全ページ用）
+// ==============================
 
-    if (!input.value.trim()) return;
+document.addEventListener('DOMContentLoaded', () => {
+  // チャットボックスが存在すれば一番下へ
+  const chatBox = document.querySelector('.chat-box');
+  if (chatBox) {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 
-    const userMsg = document.createElement("div");
-    userMsg.className = "message";
-    userMsg.textContent = "あなた: " + input.value;
-    box.appendChild(userMsg);
+  // 歯車メニュー
+  const toggle = document.querySelector('[data-gear-toggle]');
+  const menu = document.querySelector('[data-gear-menu]');
+  if (!toggle || !menu) return;
 
-    const momMsg = document.createElement("div");
-    momMsg.className = "message";
-    momMsg.textContent = "お母さん: そうなんや〜、で？（仮の返事）";
-    box.appendChild(momMsg);
+  const closeMenu = () => menu.classList.remove('open');
 
-    input.value = "";
-    box.scrollTop = box.scrollHeight;
-}
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
 
-// (今はチャットページで fetch を使って /api/chat に送る)
-// 追加のフロント処理をここに集約していける
-
-// helper: auto-scroll chat boxes if present
-document.addEventListener('DOMContentLoaded', function(){
-    const cb = document.querySelector('.chat-box');
-    if(cb){
-        cb.scrollTop = cb.scrollHeight;
-    }
+  document.addEventListener('click', closeMenu);
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMenu();
+  });
 });

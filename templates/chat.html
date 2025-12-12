@@ -21,34 +21,51 @@
 </div>
 
 <script>
-document.getElementById('send-btn').addEventListener('click', async function(){
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if(!text) return;
-    appendMessage('user', text);
-    input.value = '';
+(() => {
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const box = document.getElementById('chat-box');
 
-    const res = await fetch('/api/chat', {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({message: text})
-    });
-    const j = await res.json();
-    if(j.ok){
-        appendMessage('mom', j.reply);
-    } else {
-        appendMessage('mom', 'ごめん、エラーが起きたみたい。');
-    }
-});
-
-function appendMessage(role, text){
-    const box = document.getElementById('chat-box');
+  function appendMessage(role, text){
     const div = document.createElement('div');
     div.className = role === 'user' ? 'bubble user' : 'bubble mom';
     div.textContent = text;
     box.appendChild(div);
     box.scrollTop = box.scrollHeight;
-}
+  }
+
+  async function sendChat(){
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendMessage('user', text);
+    input.value = '';
+    input.focus();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const j = await res.json();
+      appendMessage('mom', j.ok ? j.reply : 'ごめん、エラーが起きたみたい。');
+    } catch {
+      appendMessage('mom', '通信エラーが起きたみたい。');
+    }
+  }
+
+  // ボタン送信
+  sendBtn.addEventListener('click', sendChat);
+
+  // Enter送信（IME変換中は除外）
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      sendChat();
+    }
+  });
+})();
 </script>
 
 {% endblock %}

@@ -1,116 +1,391 @@
-body {
-    font-family: sans-serif;
-    background: #f0f2f5;
-    padding: 20px;
+/* =========
+   Base
+========= */
+body{
+  font-family: -apple-system,BlinkMacSystemFont,
+    "Hiragino Kaku Gothic ProN","Hiragino Sans",
+    Meiryo,Arial,sans-serif;
+  background:#f6f8fb;
+  color:#222;
+  margin:0;
+  padding:0;
 }
 
-.section {
-    background: white;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    max-height: 90vh;
-    overflow-y: auto;
+/* タブ表示時：下部に余白を確保 */
+body.has-tabs .container{
+  padding-bottom:84px;
 }
 
-h2, h3, h4 {
-    margin-top: 20px;
+/* =========
+   Header
+========= */
+.nav-header{
+  background:#fff;
+  padding:12px 0;
+  border-bottom:1px solid #eee;
+  position:sticky;
+  top:0;
+  z-index:10;
+  box-shadow:0 1px 6px rgba(0,0,0,0.06);
 }
 
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0 20px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
+.nav-container{
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 16px;
 }
 
-.next-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background: #4b7bec;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
+/* 初期セットアップ画面（model未生成）は中央寄せ */
+body.setup-flow .nav-container{
+  justify-content:center;
 }
 
-#chat-box {
-    height: 400px;
-    overflow-y: scroll;
-    border: 1px solid #ddd;
-    padding: 10px;
-    border-radius: 8px;
-    background: #fff;
-    margin-bottom: 10px;
+/* 設定確認・変更画面は通常レイアウト */
+body.settings-screen .nav-container{
+  justify-content:space-between;
 }
 
-/* basic layout */
-body{font-family: -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Hiragino Sans",Meiryo,Arial,sans-serif;background:#f6f8fb;color:#222}
-.nav-header{background:#fff;padding:12px 0;border-bottom:1px solid #eee;position:sticky;top:0;z-index:10}
-.nav-container{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
-.logo a{font-weight:700;color:#333;text-decoration:none}
-.main-nav a{margin-left:12px;color:#666;text-decoration:none}
-.container{max-width:900px;margin:22px auto;padding:0 16px}
-.back-btn{position:fixed;left:12px;top:68px;background:#fff;border:1px solid #ddd;padding:6px 10px;border-radius:6px;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-
-h2{margin:8px 0 14px}
-input, textarea, select{width:100%;padding:10px;border-radius:8px;border:1px solid #ddd;background:#fff;box-sizing:border-box}
-.two-cols{display:flex;gap:12px}
-.two-cols > div{flex:1}
-.primary{display:inline-block;background:#4b7bec;color:#fff;padding:10px 14px;border-radius:8px;border:none;margin-top:12px}
-.btn{display:inline-block;background:#eee;padding:8px 12px;border-radius:6px;text-decoration:none;color:#333;margin-bottom:12px}
-.weights-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-
-/* chat styles */
-.chat-box{background:#fff;border:1px solid #e6e6e6;padding:12px;border-radius:10px;min-height:300px;max-height:60vh;overflow:auto}
-.bubble{display:inline-block;padding:10px 12px;border-radius:16px;margin:8px 0;max-width:80%}
-.bubble.user{background:#dcf8c6;margin-left:auto;text-align:left}
-.bubble.mom{background:#f1f0f0;margin-right:auto;text-align:left}
-.chat-input-area{display:flex;gap:8px;margin-top:12px}
-.chat-input-area input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
-
-/* schedule list */
-.schedule-list{list-style:none;padding:0}
-.schedule-list li{background:#fff;border:1px solid #eee;padding:10px;border-radius:8px;margin-bottom:8px}
-.s-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
-.s-actions a, .s-actions button{margin-right:8px}
-.priority{color:#666;font-size:13px}
-
-/* ---- UI ズレ修正 ---- */
-
-/* 相談スタイルの下に余白を追加 */
-.check-group {
-    margin-bottom: 20px;
+.logo a{
+  font-weight:700;
+  color:#333;
+  text-decoration:none;
+  font-size:18px;
 }
 
-
-/* ラベル＋チェックボックスを縦位置そろえる */
-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    line-height: 1.4;
+/* 左上の戻るリンク */
+.back-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 10px;
+  border-radius:10px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  color:#333;
+  text-decoration:none;
+  font-weight:600;
+  font-size:14px;
 }
 
-/* チェックボックスの高さを統一 */
-input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    margin: 0;
+.back-link:hover{
+  background:#f3f6ff;
 }
 
-/* チェックボックス群やセレクトが横並びの場合 */
-.setting-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+/* =========
+   Gear menu
+========= */
+.header-actions{
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
-/* セレクトの高さがズレないように */
-select {
-    height: 42px;
+.gear-btn{
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  border:1px solid #e6e6e6;
+  background:#fff;
+  cursor:pointer;
+  font-size:18px;
+  line-height:1;
 }
 
+.gear-menu{
+  position:absolute;
+  right:0;
+  top:46px;
+  min-width:240px;
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.12);
+  padding:8px;
+  display:none;
+  z-index:50;
+}
+
+.gear-menu.open{
+  display:block;
+}
+
+.gear-menu a{
+  display:block;
+  padding:10px 10px;
+  border-radius:10px;
+  color:#333;
+  text-decoration:none;
+  font-size:14px;
+}
+
+.gear-menu a:hover{
+  background:#f3f6ff;
+}
+
+.menu-sep{
+  height:1px;
+  background:#eee;
+  margin:6px 0;
+}
+
+/* =========
+   Main container
+========= */
+.container{
+  max-width:1200px;
+  margin:24px auto;
+  padding:0 16px;
+}
+
+/* =========
+   Start screen
+========= */
+body.start-screen .container{
+  max-width:720px;
+  min-height:calc(100vh - 90px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.start-card{
+  width:100%;
+  background:#fff;
+  border:1px solid #eee;
+  border-radius:14px;
+  padding:22px;
+  box-shadow:0 0 10px rgba(0,0,0,0.08);
+  text-align:center;
+}
+
+.start-card h2{
+  margin-top:0;
+}
+
+/* =========
+   Common blocks
+========= */
+.section{
+  background:#fff;
+  padding:20px;
+  margin-bottom:20px;
+  border-radius:12px;
+  box-shadow:0 0 10px rgba(0,0,0,0.08);
+}
+
+h2{ margin:8px 0 16px; }
+h3, h4{ margin-top:24px; }
+
+/* =========
+   Form controls
+========= */
+input, textarea, select{
+  width:100%;
+  padding:10px;
+  margin:8px 0 18px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  background:#fff;
+  box-sizing:border-box;
+}
+
+select{
+  height:42px;
+}
+
+.two-cols{
+  display:flex;
+  gap:16px;
+}
+
+.two-cols > div{
+  flex:1;
+}
+
+label{
+  display:block;
+  font-size:14px;
+  margin-bottom:6px;
+}
+
+.primary{
+  display:inline-block;
+  background:#4b7bec;
+  color:#fff;
+  padding:10px 16px;
+  border-radius:10px;
+  border:none;
+  cursor:pointer;
+  text-decoration:none;
+  font-weight:600;
+}
+
+.primary:active{
+  transform:translateY(1px);
+}
+
+.btn{
+  display:inline-block;
+  background:#eee;
+  padding:8px 12px;
+  border-radius:8px;
+  text-decoration:none;
+  color:#333;
+}
+
+/* =========
+   Checkbox group（横並び）
+========= */
+.check-group{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 18px;
+  margin-bottom:20px;
+}
+
+.check-group label{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin:0;
+  cursor:pointer;
+  white-space:nowrap;
+}
+
+.check-group input[type="checkbox"],
+input[type="checkbox"]{
+  width:auto;
+  height:18px;
+  margin:0;
+}
+
+/* =========
+   Chat (LINE風)
+========= */
+#chat-box.chat-box{
+  height:calc(100vh - 310px);
+  min-height:520px;
+  max-height:900px;
+  overflow:auto;
+  background:#fff;
+  border:1px solid #e6e6e6;
+  padding:14px;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.bubble{
+  width:fit-content;
+  max-width:80%;
+  padding:10px 14px;
+  border-radius:16px;
+  line-height:1.6;
+  word-break:break-word;
+  white-space:pre-wrap;
+  font-size:14px;
+}
+
+.bubble.user{
+  background:#dcf8c6;
+  align-self:flex-end;
+  border-bottom-right-radius:6px;
+}
+
+.bubble.mom{
+  background:#f1f0f0;
+  align-self:flex-start;
+  border-bottom-left-radius:6px;
+}
+
+/* chat input bar */
+.chat-input-area{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:12px;
+}
+
+.chat-input-area input{
+  flex:1;
+  height:44px;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid #ddd;
+  margin:0;
+}
+
+.chat-input-area button{
+  height:44px;
+  padding:0 18px;
+  border-radius:10px;
+  border:none;
+  background:#4b7bec;
+  color:#fff;
+  font-weight:600;
+  cursor:pointer;
+}
+
+/* =========
+   Bottom Tabs
+========= */
+.bottom-tabs{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:64px;
+  background:#fff;
+  border-top:1px solid #eee;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  z-index:20;
+  box-shadow:0 -6px 18px rgba(0,0,0,0.06);
+}
+
+.bottom-tabs .tab{
+  flex:1;
+  text-align:center;
+  text-decoration:none;
+  color:#666;
+  font-weight:600;
+  padding:10px 0;
+}
+
+.bottom-tabs .tab.active{
+  color:#4b7bec;
+}
+
+/* =========
+   Schedule
+========= */
+.schedule-list{
+  list-style:none;
+  padding:0;
+}
+
+.schedule-list li{
+  background:#fff;
+  border:1px solid #eee;
+  padding:10px;
+  border-radius:8px;
+  margin-bottom:8px;
+}
+
+.s-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.priority{
+  font-size:13px;
+  color:#666;
+}

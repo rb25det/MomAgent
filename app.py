@@ -1,5 +1,3 @@
-# app.py
-
 import json
 import subprocess
 from pathlib import Path
@@ -15,14 +13,8 @@ from flask import (
     session,
     jsonify,
 )
+from werkzeug.datastructures import MultiDict
 
-# builder.py を prompts パッケージから読む想定
-# プロジェクト構成:
-#   MomAgent/
-#     app.py
-#     prompts/
-#       __init__.py
-#       builder.py
 from prompts.builder import build_prompt
 
 # =========================
@@ -39,7 +31,21 @@ CONFIG_PATH = CONFIG_DIR / "mom_config.json"
 MODELFILE_PATH = Path("Modelfile")
 
 app = Flask(__name__)
-app.secret_key = "your_secret_key_here"  # 適当な値に変えてOK
+app.secret_key = "your_secret_key_here"  # 開発用。適当なランダム文字列に変えてOK
+
+
+# =========================
+# ★ 追加：複数選択キーを常に list で保存するための定義
+# =========================
+
+PROFILE_MULTI_KEYS = {
+    "active_time_slots",
+    "topic_weights",
+}
+
+MOM_MULTI_KEYS = {
+    "listen_style",
+}
 
 
 # =========================
@@ -52,21 +58,23 @@ def init_session():
     if "mom_settings" not in session:
         session["mom_settings"] = {}
     if "schedules" not in session:
-        session["schedules"] = []  # list of dicts
+        session["schedules"] = []
     if "chat_history" not in session:
-        session["chat_history"] = []  # [{'role':'assistant'|'user','text':...}, ...]
+        session["chat_history"] = []
     if "model_ready" not in session:
-        session["model_ready"] = False  # モデル生成済みかどうか
+        session["model_ready"] = False
+
+
+def is_setup_complete() -> bool:
+    return bool(session.get("model_ready"))
 
 
 def clear_chat_history():
-    """チャット履歴だけを消す（予定は消さない）"""
     session["chat_history"] = []
     session.modified = True
 
 
 def sort_schedules_for_display(schedules):
-    # priority(1高,2中,3低) -> then date/time
     def keyfn(s):
         pr = int(s.get("priority", "3"))
         date = s.get("date", "9999-12-31")
@@ -75,12 +83,17 @@ def sort_schedules_for_display(schedules):
     return sorted(schedules, key=keyfn)
 
 
+def require_setup_or_redirect():
+    if not is_setup_complete():
+        return redirect(url_for("profile"))
+    return None
+
+
 # =========================
 # Ollama API 呼び出し（チャット用）
 # =========================
 
 def ask(prompt: str) -> str:
-    """生成したお母さんモデルに問い合わせる"""
     try:
         r = requests.post(
             OLLAMA_URL,
@@ -89,14 +102,9 @@ def ask(prompt: str) -> str:
         )
         r.raise_for_status()
         return r.json().get("response", "").strip()
-
-    except requests.exceptions.HTTPError as e:
-        print("LLM HTTPError:", e)
-        return "ごめんね、今お母さん側のエラーみたいやわ。API やモデル名を確認してみて。"
-
     except requests.exceptions.RequestException as e:
-        print("LLM RequestException:", e)
-        return "ちょっとサーバにつながらへんみたいやわ。ollama が起動してるか確認してみて。"
+        print("LLM error:", e)
+        return "ごめん、今ちょっとつながらへんみたい。ollama が起動してるか確認してみて。"
 
 
 # =========================
@@ -104,10 +112,7 @@ def ask(prompt: str) -> str:
 # =========================
 
 def write_modelfile(config: dict):
-    """builder.py によって組み立てた SYSTEM プロンプトを使って Modelfile を作成"""
-
     system_prompt = build_prompt(config)
-
     content = f"""FROM dsasai/llama3-elyza-jp-8b
 
 SYSTEM \"\"\"{system_prompt}
@@ -121,32 +126,13 @@ PARAMETER num_ctx 8192
 
 # =========================
 # JSON 作成処理
-#   profile.html + mom_settings.html を合体して config を作る
-#   name / value は form.html に合わせてある
 # =========================
 
-def write_config_json(profile: dict, mom_form) -> dict:
-    """
-    プロフィール（session に入っている dict）と
-    mom_settings.html から POST された form を合成して config dict を作る
-    """
+def write_config_json(profile: dict, mom_form: MultiDict) -> dict:
+    # profile から値を取り出し（正規化済み：複数選択は list）
+    active_slots = profile.get("active_time_slots") or []
+    topics = profile.get("topic_weights") or []
 
-    # -------- ユーザ側 --------
-
-    # active_time_slots, topic_weights は複数選択
-    active_raw = profile.get("active_time_slots") or []
-    if isinstance(active_raw, str):
-        active_slots = [active_raw]
-    else:
-        active_slots = list(active_raw)
-
-    topic_raw = profile.get("topic_weights") or []
-    if isinstance(topic_raw, str):
-        topics = [topic_raw]
-    else:
-        topics = list(topic_raw)
-
-    # numeric 系
     def to_int_or_none(v):
         if v is None or v == "":
             return None
@@ -165,19 +151,12 @@ def write_config_json(profile: dict, mom_form) -> dict:
 
     age = to_int_or_none(profile.get("age"))
     avg_sleep = to_float_or_none(profile.get("average_sleep_hours"))
-
-    # 朝ごはん頻度（0 / 1 / 2）
     breakfast_level = to_int_or_none(profile.get("breakfast_frequency"))
-
-    # 運動習慣（週あたり回数）
     exercise_per_week = to_int_or_none(profile.get("exercise_frequency_per_week"))
 
-    # -------- お母さんモデル側 --------
-
-    # slider: strict_kind, quiet_talkative（すでに -1〜1 の値で飛んでくる想定）
+    # mom_settings
     strict_kind = to_float_or_none(mom_form.get("strict_kind")) or 0.0
     quiet_talkative = to_float_or_none(mom_form.get("quiet_talkative")) or 0.0
-
     dialect_type = mom_form.get("dialect_type") or "normal"
 
     listen_styles = mom_form.getlist("listen_style")
@@ -185,12 +164,8 @@ def write_config_json(profile: dict, mom_form) -> dict:
     give_clear_advice = 1.0 if "give_clear_advice" in listen_styles else 0.0
     praise_a_lot = 1.0 if "praise_a_lot" in listen_styles else 0.0
 
-    topic_initiation_frequency = to_float_or_none(
-        mom_form.get("topic_initiation_frequency")
-    ) or 0.5
-    topic_weight_seriousness = to_float_or_none(
-        mom_form.get("topic_weight_seriousness")
-    ) or 0.5
+    topic_initiation_frequency = to_float_or_none(mom_form.get("topic_initiation_frequency")) or 0.5
+    topic_weight_seriousness = to_float_or_none(mom_form.get("topic_weight_seriousness")) or 0.5
 
     config = {
         "user": {
@@ -199,27 +174,21 @@ def write_config_json(profile: dict, mom_form) -> dict:
             "age": age,
             "grade": profile.get("grade") or None,
             "role_status": profile.get("role_status") or None,
-
             "life": {
                 "wake_time_weekday": profile.get("wake_time_weekday"),
                 "sleep_time_weekday": profile.get("sleep_time_weekday"),
                 "wake_time_holiday": profile.get("wake_time_holiday"),
                 "sleep_time_holiday": profile.get("sleep_time_holiday"),
                 "average_sleep_hours": avg_sleep,
-                "active_time_slots": active_slots,
+                "active_time_slots": list(active_slots),
             },
-
             "health": {
                 "breakfast_frequency_level": breakfast_level,
                 "exercise_frequency_per_week": exercise_per_week,
             },
-
-            # checkbox 群をそのまま weight=1.0 で辞書化
             "topic_weights": {t: 1.0 for t in topics},
-
             "worry_now": profile.get("worry_now") or "",
         },
-
         "mother_model": {
             "strict_kind": strict_kind,
             "quiet_talkative": quiet_talkative,
@@ -230,15 +199,54 @@ def write_config_json(profile: dict, mom_form) -> dict:
             "topic_initiation_frequency": topic_initiation_frequency,
             "topic_weight_seriousness": topic_weight_seriousness,
         },
-
         "generated_model_name": GENERATED_MODEL_NAME,
     }
 
-    # JSON として保存
     with CONFIG_PATH.open("w", encoding="utf-8") as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
 
     return config
+
+
+def dict_to_multidict(d: dict) -> MultiDict:
+    items = []
+    for k, v in (d or {}).items():
+        if isinstance(v, list):
+            for vv in v:
+                items.append((k, vv))
+        else:
+            items.append((k, v))
+    return MultiDict(items)
+
+
+def rebuild_model(profile_data: dict, mom_settings_data: dict) -> None:
+    mom_form = dict_to_multidict(mom_settings_data)
+
+    config = write_config_json(profile_data, mom_form)
+    write_modelfile(config)
+
+    subprocess.run(
+        ["ollama", "create", GENERATED_MODEL_NAME, "-f", str(MODELFILE_PATH)],
+        check=True,
+    )
+
+    clear_chat_history()
+    session["model_ready"] = True
+    session.modified = True
+
+
+def normalize_form_to_dict(form: MultiDict, multi_keys) -> dict:
+    """
+    ★ 重要：複数選択は必ず list、単一は string に正規化して dict 化する
+    """
+    out = {}
+    for key in form.keys():
+        vals = form.getlist(key)
+        if key in multi_keys:
+            out[key] = vals
+        else:
+            out[key] = vals[0] if vals else ""
+    return out
 
 
 # =========================
@@ -247,132 +255,134 @@ def write_config_json(profile: dict, mom_form) -> dict:
 
 @app.route("/")
 def index():
-    # ⭐ 起動時：セッションを初期化してチャット履歴だけリセット → プロフィールへ
     init_session()
-    clear_chat_history()
+    # 初期設定完了済みなら start へ（→ チャット開始画面）
+    if is_setup_complete():
+        return redirect(url_for("start_page"))
     return redirect(url_for("profile"))
 
 
 @app.route("/profile", methods=["GET", "POST"])
 def profile():
     init_session()
+
     if request.method == "POST":
-        # checkbox など複数値に対応するため getlist ベースで保存
-        profile_data = {}
-        for key in request.form.keys():
-            vals = request.form.getlist(key)
-            if len(vals) == 1:
-                profile_data[key] = vals[0]
-            else:
-                profile_data[key] = vals
+        # ★ 修正：複数選択を常に list として保存
+        profile_data = normalize_form_to_dict(request.form, PROFILE_MULTI_KEYS)
         session["profile"] = profile_data
-        session["model_ready"] = False  # プロフィール変えたら再生成が必要
+        session.modified = True
+
+        # 初回セットアップ中：次はお母さん設定へ
+        if not is_setup_complete():
+            session["model_ready"] = False
+            session.modified = True
+            return redirect(url_for("mom_settings_page"))
+
+        # セットアップ後：mom_settings があれば再構築して chat へ
+        if session.get("mom_settings"):
+            try:
+                rebuild_model(session["profile"], session["mom_settings"])
+            except subprocess.CalledProcessError as e:
+                print("ollama create error:", e)
+                session["model_ready"] = False
+                session.modified = True
+                return "<p>モデル再構築に失敗しました。`ollama create` のログを確認してください。</p>", 500
+            return redirect(url_for("chat_page"))
+
+        # mom_settingsが無いなら設定へ
+        session["model_ready"] = False
         session.modified = True
         return redirect(url_for("mom_settings_page"))
+
     return render_template("profile.html")
 
 
 @app.route("/mom_settings", methods=["GET", "POST"])
 def mom_settings_page():
     init_session()
+
     if request.method == "POST":
-        # mom_settings も一応保存（ナビなどで使う場合用）
-        mom_settings_data = {}
-        for key in request.form.keys():
-            vals = request.form.getlist(key)
-            if len(vals) == 1:
-                mom_settings_data[key] = vals[0]
-            else:
-                mom_settings_data[key] = vals
+        # ★ 修正：複数選択を常に list として保存
+        mom_settings_data = normalize_form_to_dict(request.form, MOM_MULTI_KEYS)
         session["mom_settings"] = mom_settings_data
-        session["model_ready"] = False
         session.modified = True
 
-        # プロフィールがない場合は戻す
         profile_data = session.get("profile") or {}
         if not profile_data:
+            session["model_ready"] = False
+            session.modified = True
             return redirect(url_for("profile"))
 
-        # 1. JSON 作成
-        config = write_config_json(profile_data, request.form)
+        was_ready_before = is_setup_complete()  # ★ここがポイント（再構築前の状態を保存）
 
-        # 2. Modelfile 生成
-        write_modelfile(config)
-
-        # 3. Ollama モデル生成
         try:
-            subprocess.run(
-                ["ollama", "create", GENERATED_MODEL_NAME, "-f", str(MODELFILE_PATH)],
-                check=True,
-            )
+            rebuild_model(profile_data, mom_settings_data)
         except subprocess.CalledProcessError as e:
             print("ollama create error:", e)
             session["model_ready"] = False
             session.modified = True
-            return (
-                "<p>モデル生成に失敗しました。`ollama create` のログを確認してください。</p>",
-                500,
-            )
+            return "<p>モデル生成に失敗しました。`ollama create` のログを確認してください。</p>", 500
 
-        # 成功したらチャット履歴をリセットしてフラグ ON
-        clear_chat_history()
-        session["model_ready"] = True
-        session.modified = True
-        return redirect(url_for("chat_page"))
+        # ★初回セットアップ（= 以前readyじゃない）なら start
+        # ★設定変更（= 以前readyだった）なら chat に戻す
+        if was_ready_before:
+            return redirect(url_for("chat_page"))
+        return redirect(url_for("start_page"))
 
     return render_template("mom_settings.html")
+
+
+@app.route("/start")
+def start_page():
+    init_session()
+    if not is_setup_complete():
+        return redirect(url_for("profile"))
+    return render_template("start.html")
 
 
 @app.route("/chat", methods=["GET"])
 def chat_page():
     init_session()
-    # モデルがまだできていなければ mom_settings に飛ばす
-    if not session.get("model_ready"):
-        return redirect(url_for("mom_settings_page"))
+    if not is_setup_complete():
+        return redirect(url_for("profile"))
 
-    # 初回だけお母さんの第一声を入れる
     if not session.get("chat_history"):
-        welcome = "今日はどうするん？まず予定教えて。"
-        session["chat_history"].append({"role": "assistant", "text": welcome})
+        session["chat_history"].append({"role": "assistant", "text": "今日はどうするん？まず予定教えて。"})
         session.modified = True
 
     return render_template("chat.html", history=session.get("chat_history"))
 
 
-# -------------------------
-# Chat API
-# -------------------------
-
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
     init_session()
-
-    # モデルがまだならエラー返し（フロントでメッセージ表示用）
-    if not session.get("model_ready"):
-        return jsonify({"ok": False, "error": "model_not_ready"}), 400
+    if not is_setup_complete():
+        return jsonify({"ok": False, "error": "setup_not_complete"}), 400
 
     data = request.get_json() or {}
-    user_message = data.get("message", "").strip()
+    user_message = (data.get("message") or "").strip()
     if not user_message:
         return jsonify({"ok": False, "error": "no_message"}), 400
 
     session["chat_history"].append({"role": "user", "text": user_message})
-
     reply = ask(user_message)
-
     session["chat_history"].append({"role": "assistant", "text": reply})
     session.modified = True
 
-    return jsonify({"ok": True, "reply": reply, "history": session["chat_history"]})
+    return jsonify({"ok": True, "reply": reply})
 
 
 # -------------------------
-# schedule
+# schedule（初期設定が終わるまでアクセス禁止）
 # -------------------------
 
 @app.route("/schedule_list")
 def schedule_list():
     init_session()
+    guard = require_setup_or_redirect()
+    if guard:
+        return guard
+
     schedules = sort_schedules_for_display(session.get("schedules", []))
     return render_template("schedule_list.html", schedules=schedules)
 
@@ -380,6 +390,10 @@ def schedule_list():
 @app.route("/schedule_add", methods=["GET", "POST"])
 def schedule_add():
     init_session()
+    guard = require_setup_or_redirect()
+    if guard:
+        return guard
+
     if request.method == "POST":
         form = request.form.to_dict(flat=True)
         item = {
@@ -394,15 +408,21 @@ def schedule_add():
         session["schedules"].append(item)
         session.modified = True
         return redirect(url_for("schedule_list"))
+
     return render_template("schedule_add.html")
 
 
 @app.route("/schedule_edit/<int:index>", methods=["GET", "POST"])
 def schedule_edit(index):
     init_session()
+    guard = require_setup_or_redirect()
+    if guard:
+        return guard
+
     schedules = session.get("schedules", [])
     if index < 0 or index >= len(schedules):
         return redirect(url_for("schedule_list"))
+
     if request.method == "POST":
         form = request.form.to_dict(flat=True)
         schedules[index] = {
@@ -412,20 +432,22 @@ def schedule_edit(index):
             "priority": form.get("priority", "3"),
             "remind_value": form.get("remind_value", ""),
             "remind_unit": form.get("remind_unit", "hours"),
-            "created_at": schedules[index].get(
-                "created_at", datetime.now().isoformat()
-            ),
+            "created_at": schedules[index].get("created_at", datetime.now().isoformat()),
         }
         session["schedules"] = schedules
         session.modified = True
         return redirect(url_for("schedule_list"))
-    item = schedules[index]
-    return render_template("schedule_edit.html", item=item, index=index)
+
+    return render_template("schedule_edit.html", item=schedules[index], index=index)
 
 
 @app.route("/schedule_delete/<int:index>", methods=["POST"])
 def schedule_delete(index):
     init_session()
+    guard = require_setup_or_redirect()
+    if guard:
+        return guard
+
     schedules = session.get("schedules", [])
     if 0 <= index < len(schedules):
         schedules.pop(index)
@@ -443,6 +465,7 @@ def reset_all():
     session.clear()
     return "cleared"
 
+
 if __name__ == "__main__":
     import os
     import webbrowser
@@ -451,9 +474,8 @@ if __name__ == "__main__":
     def open_browser():
         webbrowser.open_new("http://127.0.0.1:5000/")
 
-    # Flask のリローダー稼働時のみブラウザを開く
+    # debug=True のとき reloader で二重起動しがちなので対策
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
         threading.Timer(1.0, open_browser).start()
 
-    # use_reloader=True（デフォルト）に戻すこと
     app.run(host="127.0.0.1", port=5000, debug=True)
