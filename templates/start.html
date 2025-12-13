@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}はじめましょう{% endblock %}
+
+{% block content %}
+  <div class="start-card">
+    <h2>準備ができました</h2>
+    <p>お母さんAIの準備ができたよ。チャットを始めましょう。</p>
+    <a class="primary" href="{{ url_for('chat_page') }}">チャットを開く</a>
+  </div>
+{% endblock %}

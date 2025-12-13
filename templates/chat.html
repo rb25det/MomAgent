@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}チャット{% endblock %}
+
+{% block content %}
+<h2>お母さんAI チャット</h2>
+
+<div id="chat-box" class="chat-box">
+    <!-- 既存履歴を出す -->
+    {% for m in session.get('chat_history', []) %}
+        {% if m.role == 'user' %}
+            <div class="bubble user">{{ m.text }}</div>
+        {% else %}
+            <div class="bubble mom">{{ m.text }}</div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+<div class="chat-input-area">
+    <input id="chat-input" placeholder="メッセージを入力..." />
+    <button id="send-btn">送信</button>
+</div>
+
+<script>
+(() => {
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('send-btn');
+  const box = document.getElementById('chat-box');
+
+  function appendMessage(role, text){
+    const div = document.createElement('div');
+    div.className = role === 'user' ? 'bubble user' : 'bubble mom';
+    div.textContent = text;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  async function sendChat(){
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendMessage('user', text);
+    input.value = '';
+    input.focus();
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const j = await res.json();
+      appendMessage('mom', j.ok ? j.reply : 'ごめん、エラーが起きたみたい。');
+    } catch {
+      appendMessage('mom', '通信エラーが起きたみたい。');
+    }
+  }
+
+  // ボタン送信
+  sendBtn.addEventListener('click', sendChat);
+
+  // Enter送信（IME変換中は除外）
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      sendChat();
+    }
+  });
+})();
+</script>
+
+{% endblock %}
