@@ -33,6 +33,10 @@ USE_LLM_CLASSIFIER = os.getenv("USE_LLM_CLASSIFIER", "true").lower() == "true"
 
 # LLM に渡す会話履歴の件数（最新 N 件）
 RECENT_HISTORY_FOR_LLM = 30
+# チェッカ関連設定
+ENABLE_RESPONSE_CHECKER = os.getenv("ENABLE_RESPONSE_CHECKER", "true").lower() == "true"
+CHECKER_MAX_REGEN = int(os.getenv("CHECKER_MAX_REGEN", "1"))
+RECENT_HISTORY_FOR_CHECKER = int(os.getenv("RECENT_HISTORY_FOR_CHECKER", "10"))
 
 # =========================
 # 基本設定
@@ -278,6 +282,7 @@ def write_config_json(profile: dict, mom_form: MultiDict) -> dict:
             },
             "health": {
                 "breakfast_frequency_level": breakfast_level,
+            from response_checker import check_response
                 "exercise_frequency_per_week": exercise_per_week,
             },
             "topic_weights": {t: 1.0 for t in topics},
@@ -547,6 +552,30 @@ def api_chat():
 
         reply = ask(full_prompt, system_prompt_amendment=safety_instruction)
         chosen_path = "llm"
+
+        # チェッカーを通す（LLM パスのみ）
+        try:
+            if ENABLE_RESPONSE_CHECKER:
+                # recent history for checker
+                recent_chk = session.get("chat_history") or []
+                recent_chk = recent_chk[-RECENT_HISTORY_FOR_CHECKER:]
+                checker_res = check_response(recent_chk, session.get("profile"), user_message, reply)
+                # checker_res is expected to be a dict with keys: verdict, action, suggested_fix
+                action = checker_res.get("action") or ("accept" if checker_res.get("verdict") == "accept" else "regenerate_with_amendment")
+                if action == "regenerate_with_amendment":
+                    suggested = checker_res.get("suggested_fix") or ""
+                    amend = safety_instruction
+                    if suggested:
+                        amend = safety_instruction + "\n\n# Checker amendment:\n" + suggested
+                    # 1 回だけ再生成（再生成失敗時は元の reply を使う）
+                    try:
+                        reply2 = ask(full_prompt, system_prompt_amendment=amend)
+                        # 置き換え
+                        reply = reply2 or reply
+                    except Exception as e:
+                        logging.error(f"Regeneration failed: {e}")
+        except Exception as e:
+            logging.error(f"Response checker error: {e}")
     
     elapsed_ms = (time.time() - start_time) * 1000
     
