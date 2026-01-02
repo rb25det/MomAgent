@@ -45,7 +45,7 @@ def write_log(f, speaker: str, text: str):
     f.flush()  # 念のため逐次書き出す
 
 if __name__ == "__main__":
-    print("お母さん> 今日はどうするん？ まず予定教えて。（exit で終了）")
+    print("お母さん> 久しぶりね！元気で過ごしてる？何かあったら話してごらん。（exit で終了）")
 
     # 会話履歴（LLM用）
     history = []
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     with log_file_path.open("a", encoding="utf-8") as log_f:
         # 最初の一言もログに残しておく
-        write_log(log_f, "お母さん", "今日はどうするん？ まず予定教えて。（exit で終了）")
+        write_log(log_f, "お母さん", "久しぶりね！元気で過ごしてる？何かあったら話してごらん。（exit で終了）")
 
         while True:
             q = input("あなた> ").strip()
