@@ -9,3 +9,14 @@
 *.pem
 *.key
 *.crt
+
+
+# Logs
+logs/
+logs/*
+logs/*.txt
+logs/*.log
+
+# Ignore runtime and editor files
+.vscode/
+__pycache__/
