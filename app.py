@@ -282,12 +282,6 @@ def write_config_json(profile: dict, mom_form: MultiDict) -> dict:
             },
             "health": {
                 "breakfast_frequency_level": breakfast_level,
-            from response_checker import check_response
-            from config.checker_settings import (
-                ENABLE_RESPONSE_CHECKER,
-                CHECKER_MAX_REGEN,
-                RECENT_HISTORY_FOR_CHECKER,
-            )
                 "exercise_frequency_per_week": exercise_per_week,
             },
             "topic_weights": {t: 1.0 for t in topics},
