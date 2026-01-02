@@ -10,103 +10,43 @@
 
 ---
 
-# 🚀 1. 前提：Windows に Ollama をインストールする
+## 7. Python チャット（依存と実行）
 
-### 1.1 Ollama の Windows 版をダウンロード
-公式ページからインストーラを取得：
+### 7.1 依存のインストール（推奨: 仮想環境）
 
-👉 https://ollama.com/download
-
-### 1.2 インストール後、自動で Ollama サーバが起動する
-タスクトレイに Ollama が起動していればOK。
-
-### 1.3 動作確認
-PowerShell で：
+PowerShell 例:
 
 ```powershell
-ollama --version
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
 ```
 
----
+### 7.2 実行方法
 
-# 📥 2. モデル（Llama-3-ELYZA-JP-8B）をダウンロード
+簡易 CLI と Flask サーバの両方を用意しています。用途に合わせて選んでください。
 
-PowerShell を開き、次を実行：
+- 簡易 CLI:
 
 ```powershell
-ollama pull dsasai/llama3-elyza-jp-8b
+python chat_mom.py
 ```
 
-動作確認：
+- サーバ起動（開発・API 経由／ブラウザ利用）:
 
 ```powershell
-ollama run dsasai/llama3-elyza-jp-8b
+python app.py
 ```
 
----
+### 7.3 ログの確認
 
-# 🗂 3. 作業ディレクトリの作成
+PowerShell でログを確認できます（`logs/` は `.gitignore` に追加済み）：
 
 ```powershell
-mkdir $HOME\mom-elyza
-cd $HOME\mom-elyza
+Get-ChildItem $HOME\mom-elyza\logs
 ```
 
----
-
-# 🧩 4. Modelfile（お母さん性格定義）を作成
-
-```
-FROM dsasai/llama3-elyza-jp-8b
-
-SYSTEM """
-あなたは日本の優しいお母さんです。
-関西寄りの話し方で、少し口うるさいけど愛情深く、
-ユーザーに「予定の催促」「就活など耳の痛い話題の提示」を行います。
-
-【口調の例】
-- 「あんた今日の予定どうなってるん？」
-- 「ちゃんと将来考えてるん？お母さん心配やわ」
-- 「はよやりや～」
-- 「うるさいな、は言わんの！」
-など。
-
-【会話方針】
-1. ユーザーの予定を聞き出す
-2. 進捗を促す
-3. 就活・勉強など大事な話題も出す
-4. やさしく見守りつつ、ちょっと小言を言う
-"""
-
-PARAMETER temperature 0.7
-PARAMETER num_ctx 8192
-```
-
----
-
-# 🏗 5. お母さんモデルの作成（派生モデル）
-
-```powershell
-ollama create elyza-mom -f Modelfile
-```
-
-生成されたか確認：
-
-```powershell
-ollama list
-```
-
----
-
-# 💬 6. テスト実行（会話テスト）
-
-```powershell
-ollama run elyza-mom
-```
-
----
-
-# 🐍 7. Python チャット（/api/chat による会話＋ログ保存）
+この手順では Ollama が事前に起動しており、モデルが利用可能であることを前提としています。Windows 版 Ollama がサービスとして常駐している場合はそのまま利用できますし、CLI で起動するなら `ollama serve` を実行してください。
 
 ### 7.1 依存のインストール
 

@@ -115,35 +115,32 @@ success
 ---
 
 ## 1-7. Python チャットの準備
-
-### 依存パッケージのインストール
+### 依存パッケージのインストール（推奨: 仮想環境）
 
 ```bash
-python3 -m pip install --user requests
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### chat_mom.py を作成（~/mom-elyza/chat_mom.py）
+### 実行・動作確認
 
-```python
-import requests
+このリポジトリには簡易 CLI (`chat_mom.py`) と Flask ベースの API サーバ (`app.py`) の両方があります。用途に応じて使い分けてください。
 
-URL = "http://127.0.0.1:11434/api/generate"
-MODEL = "elyza-mom"
+- 簡易 CLI（手早く対話するだけ）:
 
-def ask(prompt: str) -> str:
-    r = requests.post(URL, json={"model": MODEL, "prompt": prompt, "stream": False}, timeout=300)
-    r.raise_for_status()
-    return r.json().get("response", "").strip()
-
-if __name__ == "__main__":
-    print("お母さん> 今日はどうするん？ まず予定教えて。（exit で終了）")
-    while True:
-        q = input("あなた> ").strip()
-        if q.lower() in {"exit", "quit"}:
-            print("お母さん> ほなまたね。体こわさんようにね。")
-            break
-        print("お母さん>", ask(q))
+```bash
+python chat_mom.py
 ```
+
+- API サーバ起動（開発・ブラウザUIや外部連携を行う場合）:
+
+```bash
+python app.py
+# デフォルトは http://127.0.0.1:5000 を想定しています（app.py 内の設定を確認してください）
+```
+
+どちらを使う場合も Ollama が起動しており、モデルがロードされている必要があります（`ollama serve` を事前起動）。
 
 ---
 
@@ -162,7 +159,11 @@ ollama serve
 ## 2-2. Python チャットアプリを実行
 
 ```bash
-python3 ~/mom-elyza/chat_mom.py
+# 簡易 CLI
+python chat_mom.py
+
+# またはサーバを起動してブラウザや API から利用
+python app.py
 ```
 
 ---
