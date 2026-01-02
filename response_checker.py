@@ -4,15 +4,18 @@ import re
 from pathlib import Path
 import requests
 from datetime import datetime
-import os
 
-# 設定
-CHECKER_MODEL = os.getenv("CHECKER_MODEL", "elyza-mom")
-CHECKER_TIMEOUT_SEC = int(os.getenv("CHECKER_TIMEOUT_SEC", "4"))
-RECENT_HISTORY_FOR_CHECKER = int(os.getenv("RECENT_HISTORY_FOR_CHECKER", "10"))
-CHECKER_LOG = Path("logs/checker_events.log")
+from config.checker_settings import (
+    CHECKER_MODEL,
+    CHECKER_TIMEOUT_SEC,
+    RECENT_HISTORY_FOR_CHECKER,
+    CHECKER_LOG_PATH,
+    OLLAMA_URL,
+)
+
+# ログパスは設定ファイルに従う
+CHECKER_LOG = Path(CHECKER_LOG_PATH)
 CHECKER_LOG.parent.mkdir(parents=True, exist_ok=True)
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://127.0.0.1:11434/api/generate")
 
 
 def _write_checker_log(event: dict):
