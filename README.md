@@ -1,36 +1,34 @@
-# Mom-Elyza: 日本のお母さんAI
 
-このリポジトリは、ローカルで動作する「日本のお母さん風エージェント」を構築するためのコードと手順をまとめたものです。
+# MomAgent — 日本のお母さんAI（簡潔版）
 
-- モデル: Llama-3-ELYZA-JP-8B
-- ランタイム: Ollama
-- ローカルのみで動作（APIキー不要）
+このリポジトリは、ローカルで動作する母親風チャットエージェントのプロトタイプです。
 
----
+- モデルランタイム: Ollama（ローカル実行を想定）
+- システムプロンプト: `prompts/base_prompt.txt`
 
-## セットアップ
+重要: このブランチ `save/current-state-2026-01-02` に作業中の状態を保存しています。
 
-ご利用のOSごとに README を参照してください。
+簡単な使い方:
 
-- macOS: [README_mac.md](./README_mac.md)
-- Windows: [README_windows.md](./README_windows.md)
+1. Ollama をローカルで起動し、`Modelfile` に記載のモデルをロードする。
+2. 依存関係を用意（Python 仮想環境を推奨）。
+3. 開発用サーバを起動して API を使うか、`chat_mom.py` で CLI 対話を行う。
 
----
+例: サーバ起動（開発）
 
-## ファイル構成（例）
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt  # 無ければ必要なパッケージを手動で
+python app.py
+```
 
-- `Modelfile`  
-  お母さんの性格や会話方針を定義した Ollama 用設定。
+ログとプライバシー:
 
-- `chat_mom.py`  
-  ローカルの Mom-Elyza と対話するためのシンプルな CLI。
+- `logs/` は `.gitignore` に追加済みです。公開する前にログを確認・匿名化してください。
 
-- `logs/`  
-  会話ログ（`.gitignore` 推奨）。
+整理方針:
 
----
+- 冗長なドキュメントは削除し、`docs/SUMMARY.md` に簡潔な概要をまとめました。
 
-## ライセンス / 注意事項
-
-- モデル利用規約やライセンスは、Llama3 / ELYZA の規約に従ってください。
-- ログには個人情報を書きすぎないよう注意してください。
+問題や要望があれば `docs/SUMMARY.md` を起点に再作成します。
