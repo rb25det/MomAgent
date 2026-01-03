@@ -92,7 +92,8 @@ def init_session():
     if "session_log" not in session:
         sid = uuid4().hex
         ts = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        path = LOGS_DIR / f"chat_{sid}_{ts}.txt"
+        # Put timestamp first so filenames sort lexicographically by time
+        path = LOGS_DIR / f"chat_{ts}_{sid}.txt"
         session["session_id"] = sid
         session["session_log"] = str(path)
         # ヘッダを書き込む
@@ -139,7 +140,8 @@ def clear_chat_history():
     try:
         sid = uuid4().hex
         ts = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-        path = LOGS_DIR / f"chat_{sid}_{ts}.txt"
+        # Use timestamp prefix for consistent sorting
+        path = LOGS_DIR / f"chat_{ts}_{sid}.txt"
         session["session_id"] = sid
         session["session_log"] = str(path)
         path.parent.mkdir(parents=True, exist_ok=True)
