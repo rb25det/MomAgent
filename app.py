@@ -35,6 +35,7 @@ from config.settings import (
     CLASSIFIER_CONFIDENCE_THRESHOLD,
     LOGS_DIR,
     END_DETECTOR_CONFIDENCE,
+    CHECKER_LOG_PATH,
 )
 import os
 from uuid import uuid4
@@ -583,9 +584,31 @@ def api_chat():
                         amend = safety_instruction + "\n\n# Checker amendment:\n" + suggested
                     # 1 回だけ再生成（再生成失敗時は元の reply を使う）
                     try:
+                        orig_reply = reply
                         reply2 = ask(full_prompt, system_prompt_amendment=amend)
                         # 置き換え
                         reply = reply2 or reply
+                        # Log regeneration attempt/result to checker log
+                        try:
+                            import json as _json
+                            from datetime import datetime as _dt
+                            ev = {
+                                "timestamp": _dt.utcnow().isoformat() + "Z",
+                                "event": "regeneration",
+                                "user_message": user_message,
+                                "orig_reply": orig_reply[:2000] if orig_reply else "",
+                                "regenerated_reply": (reply2 or "")[:2000],
+                                "checker_result": checker_res,
+                            }
+                            try:
+                                p = Path(CHECKER_LOG_PATH)
+                                p.parent.mkdir(parents=True, exist_ok=True)
+                                with p.open("a", encoding="utf-8") as _f:
+                                    _f.write(_json.dumps(ev, ensure_ascii=False) + "\n")
+                            except Exception as _e:
+                                logging.error(f"Failed to write regen log: {_e}")
+                        except Exception:
+                            pass
                     except Exception as e:
                         logging.error(f"Regeneration failed: {e}")
         except Exception as e:
