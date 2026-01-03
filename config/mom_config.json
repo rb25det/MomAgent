@@ -1,6 +1,6 @@
 {
   "user": {
-    "nickname": "まさ",
+    "nickname": "こん",
     "gender": "male",
     "age": 22,
     "grade": "master_1",
@@ -18,8 +18,7 @@
       "exercise_frequency_per_week": null
     },
     "topic_weights": {
-      "job_hunting": 1.0,
-      "future": 1.0
+      "job_hunting": 1.0
     },
     "worry_now": ""
   },

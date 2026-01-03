@@ -2,16 +2,16 @@
 
 This file documents the configuration for the response-checker PoC.
 
-Location: `config/response_checker_config.json`
+Location: `config/settings.json` (preferred single source of truth)
 
-Editable fields (edit the JSON file directly):
+Editable fields (in `config/settings.json`) that affect the checker:
 
-- `ENABLE_RESPONSE_CHECKER` (bool): Enable/disable the checker. Default `true`.
-- `CHECKER_MODEL` (string): Model name used by the checker. Use a lightweight/faster model in production if available.
-- `CHECKER_TIMEOUT_SEC` (int): Timeout (seconds) for checker LLM calls. Keep small (2-5s) to avoid latency.
-- `CHECKER_MAX_REGEN` (int): Maximum number of automatic re-generations allowed when checker requests regeneration.
-- `RECENT_HISTORY_FOR_CHECKER` (int): Number of recent messages passed to the checker for context.
-- `CHECKER_LOG_PATH` (string): Path to checker events log (JSONL format).
+- `ENABLE_RESPONSE_CHECKER` (bool): Enable/disable the checker. Default: `true`.
+- `CHECKER_MODEL` (string): Model name used by the checker. Default: `elyza-mom`.
+- `CHECKER_TIMEOUT_SEC` (int): Timeout (seconds) for checker LLM calls. Default: `8`.
+- `CHECKER_MAX_REGEN` (int): Maximum number of automatic re-generations allowed when checker requests regeneration. Default: `1`.
+- `RECENT_HISTORY_FOR_CHECKER` (int): Number of recent messages passed to the checker for context. Default: `10`.
+- `CHECKER_LOG_PATH` (string): Path to checker events log (JSONL format). Default: `logs/checker_events.log`.
 - `OLLAMA_URL` (string): Ollama generate API URL.
 
 Environment variables override the JSON config. Example env vars:
@@ -23,5 +23,6 @@ CHECKER_MODEL=small-checker-model
 ```
 
 Notes:
-- The JSON file is intended to be human-editable. After edits, no restart is required for exports, but to apply env var changes set them in the shell/service and restart the process.
-- For production, prefer a small dedicated checker model to reduce latency and cost.
+- `config/settings.json` is the single human-editable source for these values. The application also supports environment-variable overrides.
+- After editing `config/settings.json`, restart the service to apply changes (env vars require setting before process start).
+- For production, prefer a smaller/faster checker model and a conservative `CHECKER_TIMEOUT_SEC` to limit latency.
