@@ -11,9 +11,22 @@ from config.settings import (
     END_DETECTOR_TIMEOUT_SEC,
     END_DETECTOR_CONFIDENCE,
     RECENT_HISTORY_FOR_CHECKER,
+    END_DETECTOR_LOG_PATH,
 )
 
 logger = logging.getLogger(__name__)
+
+# End-detector log path
+END_DETECTOR_LOG = Path(END_DETECTOR_LOG_PATH)
+END_DETECTOR_LOG.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _write_end_log(event: dict):
+    try:
+        with END_DETECTOR_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception as e:
+        logging.error(f"Failed to write end-detector log: {e}")
 
 
 def _safe_parse_json(s: str):
@@ -62,17 +75,26 @@ def detect_conversation_end(context_messages, user_message):
         r.raise_for_status()
         body = r.json().get("response", "").strip()
         parsed = _safe_parse_json(body)
+        event = {"timestamp": datetime.utcnow().isoformat() + "Z", "user_message": user_message[:1000], "raw": body[:2000]}
         if not parsed:
             logger.debug("End detector parse failed; body: %s", body[:200])
+            event.update({"status": "parse_failed"})
+            _write_end_log(event)
             return {"ending": False, "confidence": 0.0}
         # normalize
         ending = bool(parsed.get("ending"))
         confidence = float(parsed.get("confidence", 0.0))
         reason = parsed.get("reason") or ""
+        event.update({"status": "ok", "result": {"ending": ending, "confidence": confidence, "reason": reason}})
+        _write_end_log(event)
         return {"ending": ending, "confidence": confidence, "reason": reason}
     except requests.exceptions.Timeout:
         logger.warning("End detector timed out")
+        event = {"timestamp": datetime.utcnow().isoformat() + "Z", "user_message": user_message[:1000], "status": "timeout"}
+        _write_end_log(event)
         return {"ending": False, "confidence": 0.0}
     except Exception as e:
         logger.error(f"End detector error: {e}")
+        event = {"timestamp": datetime.utcnow().isoformat() + "Z", "user_message": user_message[:1000], "status": "error", "error": str(e)}
+        _write_end_log(event)
         return {"ending": False, "confidence": 0.0}

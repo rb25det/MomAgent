@@ -90,6 +90,13 @@ CLASSIFIER_LOG_PATH = LOGS_DIR / "classifier_events.log"
 ENABLE_END_DETECTOR = _env_bool("ENABLE_END_DETECTOR", _defaults.get("ENABLE_END_DETECTOR", True))
 END_DETECTOR_TIMEOUT_SEC = _env_int("END_DETECTOR_TIMEOUT_SEC", _defaults.get("END_DETECTOR_TIMEOUT_SEC", 4))
 END_DETECTOR_CONFIDENCE = _env_float("END_DETECTOR_CONFIDENCE", _defaults.get("END_DETECTOR_CONFIDENCE", 0.7))
+END_DETECTOR_LOG_PATH = _env_str("END_DETECTOR_LOG_PATH", _defaults.get("END_DETECTOR_LOG_PATH", str(LOGS_DIR / "end_detector_events.log")))
+
+# ensure end-detector log dir exists
+try:
+    Path(END_DETECTOR_LOG_PATH).parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 __all__ = [
     "OLLAMA_URL",
@@ -106,5 +113,6 @@ __all__ = [
     "CHECKER_TIMEOUT_SEC",
     "CHECKER_MAX_REGEN",
     "CHECKER_LOG_PATH",
+    "END_DETECTOR_LOG_PATH",
     "CLASSIFIER_LOG_PATH",
 ]
