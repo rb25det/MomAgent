@@ -117,15 +117,18 @@ def _quick_filter(text: str) -> Tuple[Optional[bool], float]:
         logger.debug(f"Quick filter: Strong positive detected for '{text}'")
         return True, 0.95
     
-    # 時間キー + 疑問符 → 肯定シグナル
+    # 時間キー + 疑問符（あるいは疑問表現）→ 肯定シグナル
     time_key_pattern = r"(今日|明日|今週|来週|今月|次|直近|これから)"
     question_mark = r"[?？]"
     has_time_key = re.search(time_key_pattern, text)
     has_question = re.search(question_mark, text)
-    
-    if has_time_key and has_question:
+
+    # 質問を示す日本語表現（疑問符が無くてもよく使われる語）
+    jp_question_words = re.search(r"(か$|かな$|かしら$|だっけ$|あったっけ|教えて|なにあったっけ|あるっけ|なにあった)", text)
+
+    if has_time_key and (has_question or jp_question_words):
         logger.debug(f"Quick filter: Time key + question detected for '{text}'")
-        return True, 0.85
+        return True, 0.95
     
     # 明らかな否定（説明・感想）
     negative_pattern = r"予定が(立て込ん|詰ま|いっぱい|忙し|ある)"
@@ -138,7 +141,7 @@ def _quick_filter(text: str) -> Tuple[Optional[bool], float]:
         logger.debug(f"Quick filter: Schedule creation request detected for '{text}'")
         return False, 0.90
     
-    # グレーゾーン: 時間キーはあるが疑問符なし、または単に「予定」のみ
+    # グレーゾーン: 時間キーはあるが疑問表現がない、または単に「予定」のみ
     if has_time_key or re.search(r"(予定|schedule)", text):
         logger.debug(f"Quick filter: Gray zone detected for '{text}'")
         return None, 0.50

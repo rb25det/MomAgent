@@ -1,7 +1,7 @@
 {
   "ENABLE_RESPONSE_CHECKER": true,
   "CHECKER_MODEL": "elyza-mom",
-  "CHECKER_TIMEOUT_SEC": 4,
+  "CHECKER_TIMEOUT_SEC": 8,
   "CHECKER_MAX_REGEN": 1,
   "RECENT_HISTORY_FOR_CHECKER": 10,
   "CHECKER_LOG_PATH": "logs/checker_events.log",

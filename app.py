@@ -39,6 +39,7 @@ USE_LLM_CLASSIFIER = os.getenv("USE_LLM_CLASSIFIER", "true").lower() == "true"
 
 # LLM に渡す会話履歴の件数（最新 N 件）
 RECENT_HISTORY_FOR_LLM = 30
+MIN_SCHEDULE_CONFIDENCE = float(os.getenv("MIN_SCHEDULE_CONFIDENCE", "0.7"))
 
 # =========================
 # 基本設定
@@ -551,7 +552,16 @@ def api_chat():
         else:
             full_prompt = "ユーザ: " + user_message
 
-        reply = ask(full_prompt, system_prompt_amendment=safety_instruction)
+        # Decide whether to include the schedule safety instruction.
+        include_schedule_instruction = (
+            judgment.get("intent") == "schedule_query"
+            and judgment.get("confidence", 0) >= MIN_SCHEDULE_CONFIDENCE
+        )
+
+        if include_schedule_instruction:
+            reply = ask(full_prompt, system_prompt_amendment=safety_instruction)
+        else:
+            reply = ask(full_prompt)
         chosen_path = "llm"
 
         # チェッカーを通す（LLM パスのみ）
@@ -577,6 +587,30 @@ def api_chat():
                         logging.error(f"Regeneration failed: {e}")
         except Exception as e:
             logging.error(f"Response checker error: {e}")
+
+        # Post-filter: remove schedule-management notice when not appropriate
+        try:
+            def _strip_schedule_notice(text: str) -> str:
+                if not text:
+                    return text
+                # remove common schedule guidance phrases that may have been injected
+                banned_phrases = [
+                    "予定の詳細については予定管理画面を確認してください",
+                    "予定管理画面を確認してみて",
+                    "予定管理画面を見て",
+                    "予定管理画面で確認してね",
+                ]
+                out = text
+                for p in banned_phrases:
+                    out = out.replace(p, "")
+                # clean up double spaces and stray punctuation
+                out = out.replace("  ", " ").strip()
+                return out
+
+            if judgment.get("intent") != "schedule_query":
+                reply = _strip_schedule_notice(reply)
+        except Exception:
+            pass
     
     elapsed_ms = (time.time() - start_time) * 1000
     
