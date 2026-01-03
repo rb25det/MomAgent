@@ -5,7 +5,7 @@ from pathlib import Path
 import requests
 from datetime import datetime
 
-from config.checker_settings import (
+from config.settings import (
     CHECKER_MODEL,
     CHECKER_TIMEOUT_SEC,
     RECENT_HISTORY_FOR_CHECKER,

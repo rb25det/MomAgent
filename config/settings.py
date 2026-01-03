@@ -56,6 +56,12 @@ def _env_float(key, default):
     except Exception:
         return float(default)
 
+def _env_bool(key, default):
+    v = os.getenv(key)
+    if v is None:
+        return bool(default)
+    return str(v).lower() in ("1", "true", "yes")
+
 # primary settings (env vars override JSON)
 OLLAMA_URL = _env_str("OLLAMA_URL", _defaults.get("OLLAMA_URL"))
 GENERATED_MODEL_NAME = _env_str("GENERATED_MODEL_NAME", _defaults.get("GENERATED_MODEL_NAME"))
@@ -70,21 +76,12 @@ LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
 RECENT_HISTORY_FOR_CHECKER = _env_int("RECENT_HISTORY_FOR_CHECKER", _defaults.get("RECENT_HISTORY_FOR_CHECKER"))
 
-# Integrate checker_settings (keeps existing checker JSON/overrides functioning)
-try:
-    from .checker_settings import (
-        ENABLE_RESPONSE_CHECKER,
-        CHECKER_MODEL,
-        CHECKER_TIMEOUT_SEC,
-        CHECKER_MAX_REGEN,
-        CHECKER_LOG_PATH,
-    )
-except Exception:
-    ENABLE_RESPONSE_CHECKER = True
-    CHECKER_MODEL = GENERATED_MODEL_NAME
-    CHECKER_TIMEOUT_SEC = 4
-    CHECKER_MAX_REGEN = 1
-    CHECKER_LOG_PATH = str(LOGS_DIR / "checker_events.log")
+# Checker settings (from JSON or env)
+ENABLE_RESPONSE_CHECKER = _env_bool("ENABLE_RESPONSE_CHECKER", _defaults.get("ENABLE_RESPONSE_CHECKER", True))
+CHECKER_MODEL = _env_str("CHECKER_MODEL", _defaults.get("CHECKER_MODEL", GENERATED_MODEL_NAME))
+CHECKER_TIMEOUT_SEC = _env_int("CHECKER_TIMEOUT_SEC", _defaults.get("CHECKER_TIMEOUT_SEC", 4))
+CHECKER_MAX_REGEN = _env_int("CHECKER_MAX_REGEN", _defaults.get("CHECKER_MAX_REGEN", 1))
+CHECKER_LOG_PATH = _env_str("CHECKER_LOG_PATH", _defaults.get("CHECKER_LOG_PATH", str(LOGS_DIR / "checker_events.log")))
 
 # Classifier log path
 CLASSIFIER_LOG_PATH = LOGS_DIR / "classifier_events.log"
