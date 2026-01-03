@@ -616,13 +616,40 @@ def api_chat():
             pass
         # ===== Phase 2.5: Conversation end detection and gentle schedule nudge =====
         try:
-            if judgment.get("intent") != "schedule_query" and session.get("schedules"):
+            if judgment.get("intent") != "schedule_query":
                 recent_chk = session.get("chat_history") or []
                 recent_chk = recent_chk[-RECENT_HISTORY_FOR_CHECKER:]
                 end_res = detect_conversation_end(recent_chk, user_message)
                 if end_res.get("ending") and end_res.get("confidence", 0.0) >= END_DETECTOR_CONFIDENCE:
-                    nudge = "\n\nそういえば、予定が入っているけど大丈夫？必要なら手伝うわよ。"
-                    reply = (reply or "") + nudge
+                    # First, try to nudge based on profile topic_weights from config/mom_config.json
+                    topic_nudge = None
+                    try:
+                        if CONFIG_PATH.exists():
+                            cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+                            tw = cfg.get("user", {}).get("topic_weights", {}) or {}
+                            # pick topics with positive weight, sorted by weight
+                            topics = sorted(((k, v) for k, v in tw.items() if v), key=lambda x: -x[1])
+                            if topics:
+                                # mapping keys to user-friendly Japanese labels
+                                label_map = {
+                                    "job_hunting": "就職活動のこと",
+                                    "future": "将来のこと",
+                                    "health": "体調のこと",
+                                    "study": "勉強のこと",
+                                }
+                                top_topic = topics[0][0]
+                                topic_label = label_map.get(top_topic, top_topic)
+                                topic_nudge = f"\n\nそういえば、{topic_label}について最近どう？話してみる？"
+                    except Exception:
+                        topic_nudge = None
+
+                    if topic_nudge:
+                        reply = (reply or "") + topic_nudge
+                    else:
+                        # if no profile topics, fall back to schedule nudge only when schedules exist
+                        if session.get("schedules"):
+                            nudge = "\n\nそういえば、予定が入っているけど大丈夫？必要なら手伝うわよ。"
+                            reply = (reply or "") + nudge
         except Exception as e:
             logging.error(f"End-detection / nudging error: {e}")
     
