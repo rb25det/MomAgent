@@ -27,16 +27,18 @@ from classifier import (
 )
 import os
 from uuid import uuid4
+from response_checker import check_response
+from config.checker_settings import (
+    ENABLE_RESPONSE_CHECKER,
+    CHECKER_MAX_REGEN,
+    RECENT_HISTORY_FOR_CHECKER,
+)
 
 # 環境変数で LLM 分類器を有効化/無効化できる（デフォルト: True）
 USE_LLM_CLASSIFIER = os.getenv("USE_LLM_CLASSIFIER", "true").lower() == "true"
 
 # LLM に渡す会話履歴の件数（最新 N 件）
 RECENT_HISTORY_FOR_LLM = 30
-# チェッカ関連設定
-ENABLE_RESPONSE_CHECKER = os.getenv("ENABLE_RESPONSE_CHECKER", "true").lower() == "true"
-CHECKER_MAX_REGEN = int(os.getenv("CHECKER_MAX_REGEN", "1"))
-RECENT_HISTORY_FOR_CHECKER = int(os.getenv("RECENT_HISTORY_FOR_CHECKER", "10"))
 
 # =========================
 # 基本設定
