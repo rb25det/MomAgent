@@ -19,22 +19,15 @@ from pathlib import Path
 # ロギング設定
 logger = logging.getLogger(__name__)
 
-# =========================
-# 定数定義
-# =========================
+from config.settings import (
+    OLLAMA_URL,
+    CLASSIFIER_MODEL_NAME,
+    CLASSIFIER_TIMEOUT,
+    CLASSIFIER_CONFIDENCE_THRESHOLD,
+    LOGS_DIR,
+)
 
-# Ollama API 設定
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-CLASSIFIER_MODEL_NAME = "elyza-mom"  # 分類器用モデル（メインモデルでも可）
-CLASSIFIER_TIMEOUT = 10.0  # 秒（LLM分類に十分な時間を確保）
-
-# 分類器の信頼度閾値
-CLASSIFIER_CONFIDENCE_THRESHOLD = 0.80
-
-# ロギング設定
-LOG_DIR = Path("logs")
-LOG_DIR.mkdir(exist_ok=True)
-CLASSIFIER_LOG_PATH = LOG_DIR / "classifier_events.log"
+CLASSIFIER_LOG_PATH = LOGS_DIR / "classifier_events.log"
 
 # =========================
 # LLM 分類器用プロンプト

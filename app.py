@@ -23,30 +23,31 @@ from classifier import (
     compute_date_range,
     log_event,
     analyze_classifier_log,
+)
+from config.settings import (
+    OLLAMA_URL,
+    GENERATED_MODEL_NAME,
+    RECENT_HISTORY_FOR_LLM,
+    MIN_SCHEDULE_CONFIDENCE,
+    ENABLE_RESPONSE_CHECKER,
+    RECENT_HISTORY_FOR_CHECKER,
+    CHECKER_MAX_REGEN,
     CLASSIFIER_CONFIDENCE_THRESHOLD,
+    LOGS_DIR,
 )
 import os
 from uuid import uuid4
 from response_checker import check_response
-from config.checker_settings import (
-    ENABLE_RESPONSE_CHECKER,
-    CHECKER_MAX_REGEN,
-    RECENT_HISTORY_FOR_CHECKER,
-)
 
 # 環境変数で LLM 分類器を有効化/無効化できる（デフォルト: True）
 USE_LLM_CLASSIFIER = os.getenv("USE_LLM_CLASSIFIER", "true").lower() == "true"
 
-# LLM に渡す会話履歴の件数（最新 N 件）
-RECENT_HISTORY_FOR_LLM = 30
-MIN_SCHEDULE_CONFIDENCE = float(os.getenv("MIN_SCHEDULE_CONFIDENCE", "0.7"))
+# LLM に渡す会話履歴の件数（最新 N 件）および最小スケジュール信頼度は
+# `config/settings.json` または環境変数で管理しています。
 
 # =========================
 # 基本設定
 # =========================
-
-OLLAMA_URL = "http://127.0.0.1:11434/api/generate"
-GENERATED_MODEL_NAME = "elyza-mom"
 
 CONFIG_DIR = Path("config")
 CONFIG_DIR.mkdir(exist_ok=True)
@@ -54,9 +55,7 @@ CONFIG_PATH = CONFIG_DIR / "mom_config.json"
 
 MODELFILE_PATH = Path("Modelfile")
 
-# ログ保存ディレクトリ（セッション別ログをここに作る）
-LOGS_DIR = Path("logs")
-LOGS_DIR.mkdir(exist_ok=True)
+# ログ保存ディレクトリは `config/settings.py` が既に作成しています。
 
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"  # 開発用。適当なランダム文字列に変えてOK
