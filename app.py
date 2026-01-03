@@ -34,10 +34,12 @@ from config.settings import (
     CHECKER_MAX_REGEN,
     CLASSIFIER_CONFIDENCE_THRESHOLD,
     LOGS_DIR,
+    END_DETECTOR_CONFIDENCE,
 )
 import os
 from uuid import uuid4
 from response_checker import check_response
+from conversation_end_detector import detect_conversation_end
 
 # 環境変数で LLM 分類器を有効化/無効化できる（デフォルト: True）
 USE_LLM_CLASSIFIER = os.getenv("USE_LLM_CLASSIFIER", "true").lower() == "true"
@@ -612,6 +614,17 @@ def api_chat():
                 reply = _strip_schedule_notice(reply)
         except Exception:
             pass
+        # ===== Phase 2.5: Conversation end detection and gentle schedule nudge =====
+        try:
+            if judgment.get("intent") != "schedule_query" and session.get("schedules"):
+                recent_chk = session.get("chat_history") or []
+                recent_chk = recent_chk[-RECENT_HISTORY_FOR_CHECKER:]
+                end_res = detect_conversation_end(recent_chk, user_message)
+                if end_res.get("ending") and end_res.get("confidence", 0.0) >= END_DETECTOR_CONFIDENCE:
+                    nudge = "\n\nそういえば、予定が入っているけど大丈夫？必要なら手伝うわよ。"
+                    reply = (reply or "") + nudge
+        except Exception as e:
+            logging.error(f"End-detection / nudging error: {e}")
     
     elapsed_ms = (time.time() - start_time) * 1000
     

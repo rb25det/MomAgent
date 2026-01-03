@@ -86,6 +86,11 @@ CHECKER_LOG_PATH = _env_str("CHECKER_LOG_PATH", _defaults.get("CHECKER_LOG_PATH"
 # Classifier log path
 CLASSIFIER_LOG_PATH = LOGS_DIR / "classifier_events.log"
 
+# Conversation end detector settings
+ENABLE_END_DETECTOR = _env_bool("ENABLE_END_DETECTOR", _defaults.get("ENABLE_END_DETECTOR", True))
+END_DETECTOR_TIMEOUT_SEC = _env_int("END_DETECTOR_TIMEOUT_SEC", _defaults.get("END_DETECTOR_TIMEOUT_SEC", 4))
+END_DETECTOR_CONFIDENCE = _env_float("END_DETECTOR_CONFIDENCE", _defaults.get("END_DETECTOR_CONFIDENCE", 0.7))
+
 __all__ = [
     "OLLAMA_URL",
     "GENERATED_MODEL_NAME",
