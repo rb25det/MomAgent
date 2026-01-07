@@ -2,8 +2,11 @@ import requests
 from datetime import datetime
 from pathlib import Path
 
-API_URL = "http://127.0.0.1:11434/api/chat"
-MODEL = "elyza-mom"
+from config.settings import OLLAMA_URL, GENERATED_MODEL_NAME
+
+# API URL を /api/chat 形式に変換（settings.json は /api/generate を指定しているため）
+API_URL = OLLAMA_URL.replace("/api/generate", "/api/chat")
+MODEL = GENERATED_MODEL_NAME
 
 def chat_mom(messages):
     """

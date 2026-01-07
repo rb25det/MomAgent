@@ -42,7 +42,8 @@ def _safe_parse_json(s: str):
 
 def build_checker_prompt(context_messages, user_profile, user_message, candidate_reply, rules=None):
     rules = rules or [
-        "文脈整合性: 応答は直近の会話内容に沿っているか",
+        "直接性: 応答は『ユーザの最新発言』に直接応答しているか。過去のターンの話題に戻っていないか",
+        "文脈整合性: 応答は直近の会話内容に沿っているか。話題のジャンプがないか",
         "トーン: 母親らしい口調を維持しているか",
         "繰り返し: 不要な同じ質問や確認を繰り返していないか",
         "敬語切替: 唐突な敬語切替がないか",
@@ -58,7 +59,9 @@ def build_checker_prompt(context_messages, user_profile, user_message, candidate
     }
 
     system = (
-        "You are a concise response checker. Given the JSON input, decide whether the candidate_reply is acceptable. "
+        "You are a strict response checker. Given the JSON input, decide whether the candidate_reply is acceptable. "
+        "★ CRITICAL: Check if the response directly addresses the user's LATEST message, not previous turns. "
+        "If the response suddenly reverts to an earlier conversation topic, REJECT it. "
         "Return valid JSON with keys: verdict(accept|reject), confidence(0.0-1.0), issues(list), suggested_fix(string or empty), action(accept|regenerate_with_amendment)."
     )
 

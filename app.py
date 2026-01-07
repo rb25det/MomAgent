@@ -562,10 +562,17 @@ def api_chat():
             and judgment.get("confidence", 0) >= MIN_SCHEDULE_CONFIDENCE
         )
 
+        # ★ 改善：最新ユーザ発言に直接応答するよう明示的に指示
+        focus_instruction = (
+            f"重要：ユーザの最新発言は『{user_message}』です。"
+            "この発言に直接応答してください。過去のターンの話題に戻らないようにしてください。"
+        )
+
         if include_schedule_instruction:
-            reply = ask(full_prompt, system_prompt_amendment=safety_instruction)
+            combined_amendment = safety_instruction + "\n\n" + focus_instruction
+            reply = ask(full_prompt, system_prompt_amendment=combined_amendment)
         else:
-            reply = ask(full_prompt)
+            reply = ask(full_prompt, system_prompt_amendment=focus_instruction)
         chosen_path = "llm"
 
         # チェッカーを通す（LLM パスのみ）
@@ -632,9 +639,25 @@ def api_chat():
                 # clean up double spaces and stray punctuation
                 out = out.replace("  ", " ").strip()
                 return out
+            
+            def _strip_annotations(text: str) -> str:
+                """Remove bracketed annotations like '心配そうに:' or '（共感）' from response."""
+                if not text:
+                    return text
+                import re
+                # Remove patterns like "心配そうに:" "優しく:" etc. (emotion/tone markers followed by colon)
+                text = re.sub(r'^[^:：]+[：:]\s*', '', text, flags=re.MULTILINE)
+                # Remove bracketed annotations like （共感） （会話を終わらせず） etc.
+                text = re.sub(r'[（\(][^）\)]*[）\)]', '', text)
+                # Clean up whitespace
+                text = re.sub(r'\n\s*\n', '\n', text)
+                text = text.strip()
+                return text
 
             if judgment.get("intent") != "schedule_query":
                 reply = _strip_schedule_notice(reply)
+            # Always strip annotations regardless of intent
+            reply = _strip_annotations(reply)
         except Exception:
             pass
         # ===== Phase 2.5: Conversation end detection and gentle schedule nudge =====
@@ -644,35 +667,44 @@ def api_chat():
                 recent_chk = recent_chk[-RECENT_HISTORY_FOR_CHECKER:]
                 end_res = detect_conversation_end(recent_chk, user_message)
                 if end_res.get("ending") and end_res.get("confidence", 0.0) >= END_DETECTOR_CONFIDENCE:
-                    # First, try to nudge based on profile topic_weights from config/mom_config.json
-                    topic_nudge = None
-                    try:
-                        if CONFIG_PATH.exists():
-                            cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-                            tw = cfg.get("user", {}).get("topic_weights", {}) or {}
-                            # pick topics with positive weight, sorted by weight
-                            topics = sorted(((k, v) for k, v in tw.items() if v), key=lambda x: -x[1])
-                            if topics:
-                                # mapping keys to user-friendly Japanese labels
-                                label_map = {
-                                    "job_hunting": "就職活動のこと",
-                                    "future": "将来のこと",
-                                    "health": "体調のこと",
-                                    "study": "勉強のこと",
-                                }
-                                top_topic = topics[0][0]
-                                topic_label = label_map.get(top_topic, top_topic)
-                                topic_nudge = f"\n\nそういえば、{topic_label}について最近どう？話してみる？"
-                    except Exception:
-                        topic_nudge = None
+                    # Priority 1: Check if there are registered schedules to suggest
+                    schedule_nudge = None
+                    schedules = session.get("schedules") or []
+                    if schedules:
+                        # Keep track of schedules we already nudged to avoid repeating the same item
+                        nudged = session.get("nudged_schedules") or []
+                        nudged_set = set(nudged)
 
-                    if topic_nudge:
-                        reply = (reply or "") + topic_nudge
+                        # Sort schedules by date and time
+                        schedules_sorted = sorted(
+                            schedules,
+                            key=lambda s: (s.get("date", "9999-12-31"), s.get("time", "23:59"))
+                        )
+                        # Pick the first upcoming schedule that has not been nudged yet
+                        next_schedule = None
+                        next_key = None
+                        for sc in schedules_sorted:
+                            key = (sc.get("date", ""), sc.get("time", ""), sc.get("content", ""))
+                            if key not in nudged_set:
+                                next_schedule = sc
+                                next_key = key
+                                break
+
+                        if next_schedule:
+                            schedule_date = next_schedule.get("date", "")
+                            schedule_time = next_schedule.get("time", "時間未定")
+                            schedule_content = next_schedule.get("content", "予定")
+                            schedule_nudge = f"\n\nそういえば、{schedule_date} {schedule_time} に『{schedule_content}』があるはずよね。準備は大丈夫？"
+                            nudged.append(next_key)
+                            session["nudged_schedules"] = nudged
+                            session.modified = True
+
+                    if schedule_nudge:
+                        reply = (reply or "") + schedule_nudge
                     else:
-                        # if no profile topics, fall back to schedule nudge only when schedules exist
-                        if session.get("schedules"):
-                            nudge = "\n\nそういえば、予定が入っているけど大丈夫？必要なら手伝うわよ。"
-                            reply = (reply or "") + nudge
+                        # Fallback: only if no schedules, try to nudge with a gentle topic change
+                        nudge = "\n\nそういえば、最近どんなこと頑張ってる？いつでも応援してるからね。"
+                        reply = (reply or "") + nudge
         except Exception as e:
             logging.error(f"End-detection / nudging error: {e}")
     
