@@ -702,9 +702,58 @@ def api_chat():
                     if schedule_nudge:
                         reply = (reply or "") + schedule_nudge
                     else:
-                        # Fallback: only if no schedules, try to nudge with a gentle topic change
-                        nudge = "\n\nそういえば、最近どんなこと頑張ってる？いつでも応援してるからね。"
-                        reply = (reply or "") + nudge
+                        # Fallback: nudge based on user's registered topics (topic_weights)
+                        topic_nudge = None
+                        try:
+                            # Load config to get topic_weights
+                            if CONFIG_PATH.exists():
+                                with CONFIG_PATH.open("r", encoding="utf-8") as f:
+                                    config_data = json.load(f)
+                                topic_weights = config_data.get("user", {}).get("topic_weights", {})
+                                topics = list(topic_weights.keys())
+                                
+                                if topics:
+                                    # Track nudged topics to avoid repeating
+                                    nudged_topics = session.get("nudged_topics") or []
+                                    nudged_topics_set = set(nudged_topics)
+                                    
+                                    # Find a topic that hasn't been nudged yet
+                                    next_topic = None
+                                    for t in topics:
+                                        if t not in nudged_topics_set:
+                                            next_topic = t
+                                            break
+                                    
+                                    if next_topic:
+                                        # Generate topic-specific nudge message
+                                        topic_messages = {
+                                            "job_hunting": "そういえば、就活のことで何か気になってることとか、不安なこととかある？いつでも聞くわよ。",
+                                            "future": "将来のことで考えてることとかある？一緒に話してみない？",
+                                            "health": "最近、体調はどう？ちゃんと休めてる？",
+                                            "study": "勉強の調子はどう？何か困ってることある？",
+                                            "relationship": "友達や周りの人との関係はどう？何かあったら話してね。",
+                                            "money": "お金のこと、大丈夫？困ってたら相談してね。",
+                                            "life": "一人暮らし、ちゃんとやれてる？何か困ってない？",
+                                        }
+                                        # Use specific message if available, otherwise generic
+                                        if next_topic in topic_messages:
+                                            topic_nudge = "\n\n" + topic_messages[next_topic]
+                                        else:
+                                            topic_nudge = f"\n\nそういえば、{next_topic}のことで何か気になってることある？"
+                                        
+                                        # Record this topic as nudged
+                                        nudged_topics.append(next_topic)
+                                        session["nudged_topics"] = nudged_topics
+                                        session.modified = True
+                        except Exception as topic_err:
+                            logging.debug(f"Topic nudge error: {topic_err}")
+                        
+                        if topic_nudge:
+                            reply = (reply or "") + topic_nudge
+                        else:
+                            # Ultimate fallback: generic encouragement
+                            nudge = "\n\nそういえば、最近どんなこと頑張ってる？いつでも応援してるからね。"
+                            reply = (reply or "") + nudge
         except Exception as e:
             logging.error(f"End-detection / nudging error: {e}")
     
