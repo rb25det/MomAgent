@@ -43,31 +43,16 @@ def _safe_parse_json(s: str):
         return None
 
 
+# プロンプトは prompts/all_prompts.py で一元管理
+from prompts.all_prompts import END_DETECTOR_SYSTEM_PROMPT
+
+
 def build_end_detector_prompt(context_messages, user_message):
     payload = {
         "context": context_messages or [],
         "user_message": user_message,
     }
-    system = (
-        "あなたは会話終了を判定するアシスタントです。与えられた直近の会話と最新のユーザ発話を見て、"
-        "ユーザが会話を本当に終わらせようとしているかを判定し、JSONで返してください。\n\n"
-        "【重要な判定ルール】\n"
-        "1. ネガティブな内容（失敗、不採用、悩み）≠ 会話終了。むしろ相談欲求の可能性が高い。\n"
-        "2. 会話終了の明確な合図：\n"
-        "   - 別れ表現：さようなら、またね、今日はここまで、じゃあね、バイバイ、また今度\n"
-        "   - 感謝で締める：『ありがとうね』『ありがとうございます』などの一文だけで応答\n"
-        "   - 短い同意・決意：『うん』『わかった』『がんばる』『がんばるね』『頑張ります』などの一語〜短文だけで、その後新しい質問や話題がない\n"
-        "   - 疲労表現：『疲れた』『もう無理』『今日は終わり』『おわり』など心理的な終わり\n"
-        "3. 会話継続の合図：質問形式、新しい話題の提示、悩みの報告、相談欲求、今後について語る、複雑な説明。\n"
-        "4. 注意：『ありがとうね』『うん』『がんばる』などは単独または短文で出現した場合は終了の可能性が高い（confidence >= 0.85）。ただし、その後に『〜について』『〜だから』など新しい話題や理由が続いたら継続と判定。\n"
-        "5. 長い説明の後に『以上』『それでいいです』など話の区切りがあり、その後新しい質問や話題がなければ終了の可能性。\n\n"
-        "返却フォーマット: {\"ending\": true/false, \"confidence\": 0.0-1.0, \"reason\": \"判定根拠\"}\n"
-        "例1 (終了): {\"ending\": true, \"confidence\": 0.95, \"reason\": \"『ありがとうね』という感謝で話を締めている\"}\n"
-        "例2 (継続): {\"ending\": false, \"confidence\": 0.9, \"reason\": \"不採用の報告だが相談欲求が見られる\"}\n"
-        "例3 (終了): {\"ending\": true, \"confidence\": 0.9, \"reason\": \"『うん。がんばる』という短い決意表明で、その後新しい話題がない\"}\n"
-        "例4 (終了): {\"ending\": true, \"confidence\": 0.85, \"reason\": \"『わかった』『頑張ります』という短い同意・決意で締めており、会話の区切りと判断\"}"
-    )
-    prompt = system + "\n\nInput JSON:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
+    prompt = END_DETECTOR_SYSTEM_PROMPT + "\n\nInput JSON:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
     return prompt
 
 

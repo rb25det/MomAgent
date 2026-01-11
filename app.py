@@ -18,6 +18,12 @@ from flask import (
 from werkzeug.datastructures import MultiDict
 
 from prompts.builder import build_prompt
+from prompts.all_prompts import (
+    SAFETY_INSTRUCTION,
+    get_focus_instruction,
+    get_topic_nudge_message,
+    GENERIC_NUDGE,
+)
 from classifier import (
     classify_schedule_intent,
     compute_date_range,
@@ -536,12 +542,7 @@ def api_chat():
         reply = _handle_schedule_query_with_judgment(user_message, judgment)
         chosen_path = "rule-based"
     else:
-        # LLM processing with safety instruction
-        safety_instruction = (
-            "重要な指示: ユーザが予定やスケジュールについて聞いても、"
-            "具体的な予定の事実（日時、内容、場所など）を述べないこと。"
-            "代わりに『予定の詳細については予定管理画面を確認してください』と案内すること。"
-        )
+        # LLM processing with safety instruction (from all_prompts.py)
         # LLM に渡すプロンプトを作成：直近の会話履歴（最新 RECENT_HISTORY_FOR_LLM 件）＋現在のユーザ発話
         recent = session.get("chat_history") or []
         recent = recent[-RECENT_HISTORY_FOR_LLM:]
@@ -562,14 +563,11 @@ def api_chat():
             and judgment.get("confidence", 0) >= MIN_SCHEDULE_CONFIDENCE
         )
 
-        # ★ 改善：最新ユーザ発言に直接応答するよう明示的に指示
-        focus_instruction = (
-            f"重要：ユーザの最新発言は『{user_message}』です。"
-            "この発言に直接応答してください。過去のターンの話題に戻らないようにしてください。"
-        )
+        # ★ 改善：最新ユーザ発言に直接応答するよう明示的に指示 (from all_prompts.py)
+        focus_instruction = get_focus_instruction(user_message)
 
         if include_schedule_instruction:
-            combined_amendment = safety_instruction + "\n\n" + focus_instruction
+            combined_amendment = SAFETY_INSTRUCTION + "\n\n" + focus_instruction
             reply = ask(full_prompt, system_prompt_amendment=combined_amendment)
         else:
             reply = ask(full_prompt, system_prompt_amendment=focus_instruction)
@@ -586,9 +584,9 @@ def api_chat():
                 action = checker_res.get("action") or ("accept" if checker_res.get("verdict") == "accept" else "regenerate_with_amendment")
                 if action == "regenerate_with_amendment":
                     suggested = checker_res.get("suggested_fix") or ""
-                    amend = safety_instruction
+                    amend = SAFETY_INSTRUCTION
                     if suggested:
-                        amend = safety_instruction + "\n\n# Checker amendment:\n" + suggested
+                        amend = SAFETY_INSTRUCTION + "\n\n# Checker amendment:\n" + suggested
                     # 1 回だけ再生成（再生成失敗時は元の reply を使う）
                     try:
                         orig_reply = reply
@@ -725,21 +723,8 @@ def api_chat():
                                             break
                                     
                                     if next_topic:
-                                        # Generate topic-specific nudge message
-                                        topic_messages = {
-                                            "job_hunting": "そういえば、就活のことで何か気になってることとか、不安なこととかある？いつでも聞くわよ。",
-                                            "future": "将来のことで考えてることとかある？一緒に話してみない？",
-                                            "health": "最近、体調はどう？ちゃんと休めてる？",
-                                            "study": "勉強の調子はどう？何か困ってることある？",
-                                            "relationship": "友達や周りの人との関係はどう？何かあったら話してね。",
-                                            "money": "お金のこと、大丈夫？困ってたら相談してね。",
-                                            "life": "一人暮らし、ちゃんとやれてる？何か困ってない？",
-                                        }
-                                        # Use specific message if available, otherwise generic
-                                        if next_topic in topic_messages:
-                                            topic_nudge = "\n\n" + topic_messages[next_topic]
-                                        else:
-                                            topic_nudge = f"\n\nそういえば、{next_topic}のことで何か気になってることある？"
+                                        # Generate topic-specific nudge message (from all_prompts.py)
+                                        topic_nudge = "\n\n" + get_topic_nudge_message(next_topic)
                                         
                                         # Record this topic as nudged
                                         nudged_topics.append(next_topic)
@@ -751,9 +736,8 @@ def api_chat():
                         if topic_nudge:
                             reply = (reply or "") + topic_nudge
                         else:
-                            # Ultimate fallback: generic encouragement
-                            nudge = "\n\nそういえば、最近どんなこと頑張ってる？いつでも応援してるからね。"
-                            reply = (reply or "") + nudge
+                            # Ultimate fallback: generic encouragement (from all_prompts.py)
+                            reply = (reply or "") + "\n\n" + GENERIC_NUDGE
         except Exception as e:
             logging.error(f"End-detection / nudging error: {e}")
     

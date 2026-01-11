@@ -40,15 +40,12 @@ def _safe_parse_json(s: str):
         return None
 
 
+# プロンプトは prompts/all_prompts.py で一元管理
+from prompts.all_prompts import RESPONSE_CHECKER_SYSTEM_PROMPT, RESPONSE_CHECKER_RULES
+
+
 def build_checker_prompt(context_messages, user_profile, user_message, candidate_reply, rules=None):
-    rules = rules or [
-        "直接性: 応答は『ユーザの最新発言』に直接応答しているか。過去のターンの話題に戻っていないか",
-        "文脈整合性: 応答は直近の会話内容に沿っているか。話題のジャンプがないか",
-        "トーン: 母親らしい口調を維持しているか",
-        "繰り返し: 不要な同じ質問や確認を繰り返していないか",
-        "敬語切替: 唐突な敬語切替がないか",
-        "不適切表現: 攻撃的・個人情報などが含まれていないか",
-    ]
+    rules = rules or RESPONSE_CHECKER_RULES
 
     payload = {
         "context": context_messages,
@@ -58,14 +55,7 @@ def build_checker_prompt(context_messages, user_profile, user_message, candidate
         "rules": rules,
     }
 
-    system = (
-        "You are a strict response checker. Given the JSON input, decide whether the candidate_reply is acceptable. "
-        "★ CRITICAL: Check if the response directly addresses the user's LATEST message, not previous turns. "
-        "If the response suddenly reverts to an earlier conversation topic, REJECT it. "
-        "Return valid JSON with keys: verdict(accept|reject), confidence(0.0-1.0), issues(list), suggested_fix(string or empty), action(accept|regenerate_with_amendment)."
-    )
-
-    prompt = system + "\n\nInput JSON:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
+    prompt = RESPONSE_CHECKER_SYSTEM_PROMPT + "\n\nInput JSON:\n" + json.dumps(payload, ensure_ascii=False, indent=2)
     return prompt
 
 

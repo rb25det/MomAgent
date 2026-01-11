@@ -27,55 +27,10 @@ from config.settings import (
     LOGS_DIR,
 )
 
+# プロンプトは prompts/all_prompts.py で一元管理
+from prompts.all_prompts import CLASSIFIER_SYSTEM_PROMPT
+
 CLASSIFIER_LOG_PATH = LOGS_DIR / "classifier_events.log"
-
-# =========================
-# LLM 分類器用プロンプト
-# =========================
-
-CLASSIFIER_SYSTEM_PROMPT = """あなたは、ユーザの発話が「スケジュール・予定に関する問い合わせ」であるか否かを、
-高精度で分類する専門の分類器です。以下の指示に従い、JSON形式で判定結果を返してください。
-
-指示:
-1. ユーザ発話を受け取ります。
-2. 以下の観点から判定してください：
-   - その発話は「スケジュール・予定」に関する質問（問い合わせ）であるか？
-   - もしそうなら、どの時間範囲（スコープ）について聞かれているか？
-3. 判定根拠を簡潔に述べてください。
-
-【intent】
-- "schedule_query": ユーザが現在のスケジュール・予定について「教えて」「確認」「見たい」等、
-  事実確認を求めている。
-- "not_schedule": スケジュール問い合わせではない。感想、雑談、予定立案要望、その他の依頼。
-
-【scope】（schedule_query の場合のみ有効）
-- "today": 当日の予定
-- "tomorrow": 翌日の予定
-- "week": 今週の予定（月～日）
-- "month": 今月の予定
-- "next": 次の1件（最も近い予定1つ）
-- "upcoming": 直近複数件（3件程度）
-- "unspecified": スコープが不明確
-
-【confidence_base】（LLMの確信度）
-- 0.9以上: 明確な予定問い合わせと判定
-- 0.7～0.9: 可能性が高いが、若干の曖昧さ
-- 0.5～0.7: グレーゾーン
-- 0.5未満: not_schedule の可能性が高い
-
-ネガティブシグナル（not_schedule の例）:
-- 「予定が立て込んでる」→ 説明・感想であり、事実確認ではない
-- 「予定を立てたい」→ 予定の追加/作成要望。確認ではない
-- 「予定を変更したい」→ 編集要望。確認ではない
-
-出力フォーマット（JSON）:
-{
-    "intent": "schedule_query" | "not_schedule",
-    "scope": "today" | "tomorrow" | "week" | "month" | "next" | "upcoming" | "unspecified",
-    "confidence_base": 0.0 ~ 1.0 の浮動小数点数,
-    "reasoning": "判定の根拠（1-2文）"
-}
-"""
 
 
 # =========================
