@@ -8,7 +8,7 @@
 1. MOM_BASE_PROMPT           - お母さんの基本人格・振る舞い（テンプレート）
 2. CLASSIFIER_SYSTEM_PROMPT  - 予定問い合わせ分類器
 3. RESPONSE_CHECKER_PROMPT   - 応答品質チェッカー
-4. END_DETECTOR_PROMPT       - 会話終了検出器
+4. END_DETECTOR_PROMPT       - 会話区切り・話題転換タイミング検出器
 5. SAFETY_INSTRUCTION        - 予定情報の安全指示
 6. FOCUS_INSTRUCTION         - 最新発言への集中指示（テンプレート）
 """
@@ -106,31 +106,75 @@ RESPONSE_CHECKER_RULES = [
 
 
 # =============================================================================
-# 4. END_DETECTOR_PROMPT - 会話終了検出器
+# 4. END_DETECTOR_PROMPT - 会話区切り・話題転換タイミング検出器
 # =============================================================================
-# 用途: ユーザが会話を終わらせようとしているかを判定
+# 用途: ユーザの発話が「一区切り」であり、新しい話題を振っても自然なタイミングかを判定
 # 使用箇所: conversation_end_detector.py → build_end_detector_prompt()
-# 期待出力: JSON {"ending": true|false, "confidence": 0.0-1.0, "reason": "判定根拠"}
+# 期待出力: JSON {"ready_for_new_topic": true|false, "ending": true|false, "confidence": 0.0-1.0, "reason": "判定根拠", "user_state": "..."}
 
-END_DETECTOR_SYSTEM_PROMPT = """あなたは会話終了を判定するアシスタントです。与えられた直近の会話と最新のユーザ発話を見て、
-ユーザが会話を本当に終わらせようとしているかを判定し、JSONで返してください。
+END_DETECTOR_SYSTEM_PROMPT = """あなたは会話の「区切りタイミング」を判定するアシスタントです。
+与えられた直近の会話と最新のユーザ発話を見て、以下を判定してください：
 
-【重要な判定ルール】
-1. ネガティブな内容（失敗、不採用、悩み）≠ 会話終了。むしろ相談欲求の可能性が高い。
-2. 会話終了の明確な合図：
-   - 別れ表現：さようなら、またね、今日はここまで、じゃあね、バイバイ、また今度
-   - 感謝で締める：『ありがとうね』『ありがとうございます』などの一文だけで応答
-   - 短い同意・決意：『うん』『わかった』『がんばる』『がんばるね』『頑張ります』などの一語〜短文だけで、その後新しい質問や話題がない
-   - 疲労表現：『疲れた』『もう無理』『今日は終わり』『おわり』など心理的な終わり
-3. 会話継続の合図：質問形式、新しい話題の提示、悩みの報告、相談欲求、今後について語る、複雑な説明。
-4. 注意：『ありがとうね』『うん』『がんばる』などは単独または短文で出現した場合は終了の可能性が高い（confidence >= 0.85）。ただし、その後に『〜について』『〜だから』など新しい話題や理由が続いたら継続と判定。
-5. 長い説明の後に『以上』『それでいいです』など話の区切りがあり、その後新しい質問や話題がなければ終了の可能性。
+1. ready_for_new_topic: 新しい話題（例：就活、健康、将来など）を振っても自然なタイミングか？
+2. ending: ユーザが会話を完全に終わらせようとしているか？
+3. user_state: ユーザの現在の状態
 
-返却フォーマット: {"ending": true/false, "confidence": 0.0-1.0, "reason": "判定根拠"}
-例1 (終了): {"ending": true, "confidence": 0.95, "reason": "『ありがとうね』という感謝で話を締めている"}
-例2 (継続): {"ending": false, "confidence": 0.9, "reason": "不採用の報告だが相談欲求が見られる"}
-例3 (終了): {"ending": true, "confidence": 0.9, "reason": "『うん。がんばる』という短い決意表明で、その後新しい話題がない"}
-例4 (終了): {"ending": true, "confidence": 0.85, "reason": "『わかった』『頑張ります』という短い同意・決意で締めており、会話の区切りと判断"}"""
+【ready_for_new_topic = true となるケース】
+★ 会話が一区切りつき、新しい話題を振っても自然なタイミング
+- 短い同意・決意で一区切り：「うん」「わかった」「がんばる」「そうする」「ありがとう」
+- 話題が収束した合図：「そうだね」「確かに」「なるほど」+ 新しい発言がない
+- 軽い報告で終わる：「今日はこんな感じ」「特にないかな」「まあまあかな」
+- 挨拶・一段落：「おはよう」「ただいま」「おやすみ」（→ これらは新話題を振る好機）
+- 相談が一旦落ち着いた：悩み相談 → アドバイス → 「ありがとう」「やってみる」
+
+【ready_for_new_topic = false となるケース】
+★ 今は話題を振るべきでないタイミング
+- ユーザが質問している最中：「〜って何？」「どうしたらいい？」
+- 悩みを話し始めた直後：「実は最近…」「ちょっと相談なんだけど」
+- 感情が高ぶっている：「もう無理」「辛い」「最悪」（→ まず共感が必要）
+- 話が続きそう：「あとね」「それでね」「〜だから」
+- 具体的な説明の途中：長文で状況を説明している
+
+【ending = true となるケース】
+★ 会話を完全に終わらせようとしている
+- 明確な別れ表現：「さようなら」「またね」「じゃあね」「バイバイ」「おやすみ」
+- 終了宣言：「今日はここまで」「もう寝る」「また今度」「終わり」
+- 注意：「おやすみ」は ending=true だが ready_for_new_topic=false（別れなので新話題は不自然）
+
+【ending = false だが ready_for_new_topic = true の典型例】
+- 「ありがとう」→ 感謝で一区切り、でも会話は続けられる
+- 「うん、がんばる」→ 決意で一区切り、別の話題を振れる
+- 「そうだね」→ 同意で一区切り、新話題OK
+- 「特にないかな」→ 現話題終了、新話題を振る好機
+
+【user_state の分類】
+- "satisfied": 満足・納得している（→ 新話題OK）
+- "resolved": 相談が解決した（→ 新話題OK）
+- "neutral": 特に感情なし（→ 新話題OK）
+- "curious": 質問中・知りたがっている（→ 新話題NG、回答が必要）
+- "troubled": 悩み中・相談中（→ 新話題NG、傾聴が必要）
+- "emotional": 感情的（→ 新話題NG、共感が必要）
+- "farewell": 別れの挨拶中（→ 新話題NG、見送りが必要）
+
+【confidence の目安】
+- 0.9以上: 明確に判定できる（別れ表現、明確な一区切り）
+- 0.7〜0.9: 高い確信度（短い同意・感謝など）
+- 0.5〜0.7: やや曖昧（文脈依存）
+- 0.5未満: 判定困難
+
+返却フォーマット:
+{
+  "ready_for_new_topic": true/false,
+  "ending": true/false,
+  "confidence": 0.0-1.0,
+  "reason": "判定根拠",
+  "user_state": "satisfied|resolved|neutral|curious|troubled|emotional|farewell"
+}
+
+例1: {"ready_for_new_topic": true, "ending": false, "confidence": 0.85, "reason": "『ありがとう』で相談が一区切り、新話題を振れるタイミング", "user_state": "satisfied"}
+例2: {"ready_for_new_topic": false, "ending": false, "confidence": 0.9, "reason": "『最近ちょっと悩んでて…』と悩みを話し始めている", "user_state": "troubled"}
+例3: {"ready_for_new_topic": false, "ending": true, "confidence": 0.95, "reason": "『おやすみ』で会話終了、新話題は不自然", "user_state": "farewell"}
+例4: {"ready_for_new_topic": true, "ending": false, "confidence": 0.8, "reason": "『うん、そうする』で決意表明、別の話題を振れる", "user_state": "resolved"}"""
 
 
 # =============================================================================
@@ -211,10 +255,10 @@ def print_all_prompts():
         ("1. MOM_BASE_PROMPT", "お母さんの基本人格", "prompts/base_prompt.txt", "Modelfile生成時"),
         ("2. CLASSIFIER_SYSTEM_PROMPT", "予定問い合わせ分類器", "classifier.py", "ユーザ発話の意図判定"),
         ("3. RESPONSE_CHECKER_SYSTEM_PROMPT", "応答品質チェッカー", "response_checker.py", "LLM応答の品質検証"),
-        ("4. END_DETECTOR_SYSTEM_PROMPT", "会話終了検出器", "conversation_end_detector.py", "会話終了の判定"),
+        ("4. END_DETECTOR_SYSTEM_PROMPT", "会話区切り・話題転換タイミング検出器", "conversation_end_detector.py", "新話題を振るタイミング判定"),
         ("5. SAFETY_INSTRUCTION", "予定情報の安全指示", "app.py", "予定を勝手に述べない制約"),
         ("6. FOCUS_INSTRUCTION_TEMPLATE", "最新発言への集中指示", "app.py", "話題復帰の防止"),
-        ("7. TOPIC_NUDGE_MESSAGES", "トピックナッジ", "app.py", "会話終了時のトピック質問"),
+        ("7. TOPIC_NUDGE_MESSAGES", "トピックナッジ", "app.py", "区切りタイミングでのトピック質問"),
         ("8. GENERIC_NUDGE", "汎用ナッジ", "app.py", "フォールバック励まし"),
     ]
     

@@ -94,10 +94,6 @@
     <label><input type="checkbox" name="active_time_slots" value="midnight" {% if 'midnight' in active %}checked{% endif %}> 深夜</label>
   </div>
 
-  <h3>就活・将来</h3>
-  <label>今一番不安なこと</label>
-  <textarea name="worry_now" rows="2">{{ p.get('worry_now','') }}</textarea>
-
   <h3>健康</h3>
   {% set bf = p.get('breakfast_frequency','') %}
   <label>朝ごはんを食べる頻度</label>

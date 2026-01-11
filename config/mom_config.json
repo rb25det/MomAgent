@@ -1,9 +1,9 @@
 {
   "user": {
-    "nickname": "こん",
+    "nickname": "おれ",
     "gender": "male",
     "age": 22,
-    "grade": "master_1",
+    "grade": null,
     "role_status": "student",
     "life": {
       "wake_time_weekday": "",
@@ -19,9 +19,8 @@
     },
     "topic_weights": {
       "job_hunting": 1.0,
-      "future": 1.0
-    },
-    "worry_now": ""
+      "health": 1.0
+    }
   },
   "mother_model": {
     "strict_kind": 0.0,

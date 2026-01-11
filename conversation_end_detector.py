@@ -57,13 +57,20 @@ def build_end_detector_prompt(context_messages, user_message):
 
 
 def detect_conversation_end(context_messages, user_message):
-    """Call LLM to detect whether the user is trying to end the conversation.
+    """Call LLM to detect whether the user is trying to end the conversation,
+    and whether it's a good time to introduce a new topic.
 
-    Returns dict: {"ending": bool, "confidence": float, "reason": str}
-    On failure returns {"ending": False, "confidence": 0.0}
+    Returns dict: {
+        "ending": bool,
+        "ready_for_new_topic": bool,
+        "confidence": float,
+        "reason": str,
+        "user_state": str
+    }
+    On failure returns {"ending": False, "ready_for_new_topic": False, "confidence": 0.0}
     """
     if not ENABLE_END_DETECTOR:
-        return {"ending": False, "confidence": 0.0}
+        return {"ending": False, "ready_for_new_topic": False, "confidence": 0.0}
 
     prompt = build_end_detector_prompt(context_messages, user_message)
     try:
@@ -80,21 +87,31 @@ def detect_conversation_end(context_messages, user_message):
             logger.debug("End detector parse failed; body: %s", body[:200])
             event.update({"status": "parse_failed"})
             _write_end_log(event)
-            return {"ending": False, "confidence": 0.0}
-        # normalize
+            return {"ending": False, "ready_for_new_topic": False, "confidence": 0.0}
+        # normalize - 新しいフィールドも抽出
         ending = bool(parsed.get("ending"))
+        ready_for_new_topic = bool(parsed.get("ready_for_new_topic", False))
         confidence = float(parsed.get("confidence", 0.0))
         reason = parsed.get("reason") or ""
-        event.update({"status": "ok", "result": {"ending": ending, "confidence": confidence, "reason": reason}})
+        user_state = parsed.get("user_state") or "neutral"
+        
+        result = {
+            "ending": ending,
+            "ready_for_new_topic": ready_for_new_topic,
+            "confidence": confidence,
+            "reason": reason,
+            "user_state": user_state
+        }
+        event.update({"status": "ok", "result": result})
         _write_end_log(event)
-        return {"ending": ending, "confidence": confidence, "reason": reason}
+        return result
     except requests.exceptions.Timeout:
         logger.warning("End detector timed out")
         event = {"timestamp": datetime.utcnow().isoformat() + "Z", "user_message": user_message[:1000], "status": "timeout"}
         _write_end_log(event)
-        return {"ending": False, "confidence": 0.0}
+        return {"ending": False, "ready_for_new_topic": False, "confidence": 0.0}
     except Exception as e:
         logger.error(f"End detector error: {e}")
         event = {"timestamp": datetime.utcnow().isoformat() + "Z", "user_message": user_message[:1000], "status": "error", "error": str(e)}
         _write_end_log(event)
-        return {"ending": False, "confidence": 0.0}
+        return {"ending": False, "ready_for_new_topic": False, "confidence": 0.0}

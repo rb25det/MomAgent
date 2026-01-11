@@ -298,7 +298,6 @@ def write_config_json(profile: dict, mom_form: MultiDict) -> dict:
                 "exercise_frequency_per_week": exercise_per_week,
             },
             "topic_weights": {t: 1.0 for t in topics},
-            "worry_now": profile.get("worry_now") or "",
         },
         "mother_model": {
             "strict_kind": strict_kind,
@@ -658,13 +657,25 @@ def api_chat():
             reply = _strip_annotations(reply)
         except Exception:
             pass
-        # ===== Phase 2.5: Conversation end detection and gentle schedule nudge =====
+        # ===== Phase 2.5: 会話区切り検出と話題ナッジ =====
+        # 新しい話題を振るべきタイミング (ready_for_new_topic) または 会話終了 (ending) を検出
         try:
             if judgment.get("intent") != "schedule_query":
                 recent_chk = session.get("chat_history") or []
                 recent_chk = recent_chk[-RECENT_HISTORY_FOR_CHECKER:]
                 end_res = detect_conversation_end(recent_chk, user_message)
-                if end_res.get("ending") and end_res.get("confidence", 0.0) >= END_DETECTOR_CONFIDENCE:
+                
+                # 新しい判定: ready_for_new_topic を優先的に使用
+                # 後方互換: ready_for_new_topic がない場合は ending を使用
+                should_nudge = False
+                if end_res.get("ready_for_new_topic") and end_res.get("confidence", 0.0) >= END_DETECTOR_CONFIDENCE:
+                    should_nudge = True
+                elif end_res.get("ending") and end_res.get("confidence", 0.0) >= END_DETECTOR_CONFIDENCE:
+                    # 会話終了時でも farewell 状態でなければナッジOK
+                    if end_res.get("user_state") != "farewell":
+                        should_nudge = True
+                
+                if should_nudge:
                     # Priority 1: Check if there are registered schedules to suggest
                     schedule_nudge = None
                     schedules = session.get("schedules") or []
