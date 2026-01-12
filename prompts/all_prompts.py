@@ -119,50 +119,52 @@ END_DETECTOR_SYSTEM_PROMPT = """あなたは会話の「区切りタイミング
 2. ending: ユーザが会話を完全に終わらせようとしているか？
 3. user_state: ユーザの現在の状態
 
+【基本方針】
+- 「最新のユーザ発話」の内容を最優先で判定する
+- 過去の会話で悩みがあっても、最新発話が「大丈夫」「特にない」「わかった」などの場合は一区切りと判断
+- troubled は「今まさに悩みを打ち明けている発話」のみに適用する
+
 【ready_for_new_topic = true となるケース】
 ★ 会話が一区切りつき、新しい話題を振っても自然なタイミング
-- 短い同意・決意で一区切り：「うん」「わかった」「がんばる」「そうする」「ありがとう」
-- 話題が収束した合図：「そうだね」「確かに」「なるほど」+ 新しい発言がない
-- 軽い報告で終わる：「今日はこんな感じ」「特にないかな」「まあまあかな」
-- 挨拶・一段落：「おはよう」「ただいま」「おやすみ」（→ これらは新話題を振る好機）
-- 相談が一旦落ち着いた：悩み相談 → アドバイス → 「ありがとう」「やってみる」
+- 短い肯定・同意：「うん」「わかった」「そうだね」「確かに」「なるほど」
+- 短い決意表明：「がんばる」「そうする」「やってみる」
+- 感謝：「ありがとう」「ありがとうね」
+- 問題なしの報告：「大丈夫」「特にない」「特にないかな」「まあまあ」「元気だよ」
+- 軽い否定：「そんなことないよ」（心配への返答として）
+- 挨拶への応答：「こんにちは」「おはよう」「元気だよ」
+- 話題が収束：それ以上深掘りする内容がない短い返答
 
 【ready_for_new_topic = false となるケース】
 ★ 今は話題を振るべきでないタイミング
-- ユーザが質問している最中：「〜って何？」「どうしたらいい？」
+- 悩み・不安を「今まさに」打ち明けている：「〜が難しい」「〜が不安」「〜が心配」「〜がうまくいかない」
+- 質問・相談の最中：「〜って何？」「どうしたらいい？」「〜についてどう思う？」
 - 悩みを話し始めた直後：「実は最近…」「ちょっと相談なんだけど」
-- 感情が高ぶっている：「もう無理」「辛い」「最悪」（→ まず共感が必要）
+- 感情が高ぶっている：「もう無理」「辛い」「最悪」「悲しい」
 - 話が続きそう：「あとね」「それでね」「〜だから」
-- 具体的な説明の途中：長文で状況を説明している
+- 長文で状況説明中
 
 【ending = true となるケース】
-★ 会話を完全に終わらせようとしている
 - 明確な別れ表現：「さようなら」「またね」「じゃあね」「バイバイ」「おやすみ」
-- 終了宣言：「今日はここまで」「もう寝る」「また今度」「終わり」
-- 注意：「おやすみ」は ending=true だが ready_for_new_topic=false（別れなので新話題は不自然）
-
-【ending = false だが ready_for_new_topic = true の典型例】
-- 「ありがとう」→ 感謝で一区切り、でも会話は続けられる
-- 「うん、がんばる」→ 決意で一区切り、別の話題を振れる
-- 「そうだね」→ 同意で一区切り、新話題OK
-- 「特にないかな」→ 現話題終了、新話題を振る好機
+- 終了宣言：「今日はここまで」「もう寝る」「また今度」
 
 【user_state の分類】
-- "satisfied": 満足・納得している（→ 新話題OK）
-- "resolved": 相談が解決した（→ 新話題OK）
-- "neutral": 特に感情なし（→ 新話題OK）
-- "curious": 質問中・知りたがっている（→ 新話題NG、回答が必要）
-- "troubled": 悩み中・相談中（→ 新話題NG、傾聴が必要）
-- "emotional": 感情的（→ 新話題NG、共感が必要）
-- "farewell": 別れの挨拶中（→ 新話題NG、見送りが必要）
+- "satisfied": 満足・納得 → ready_for_new_topic = true
+- "resolved": 相談が解決 → ready_for_new_topic = true
+- "neutral": 特に感情なし、淡々とした返答 → ready_for_new_topic = true
+- "curious": 質問中 → ready_for_new_topic = false
+- "troubled": 今まさに悩み・不安を打ち明けている → ready_for_new_topic = false
+- "emotional": 感情的（怒り・悲しみ） → ready_for_new_topic = false
+- "farewell": 別れの挨拶 → ready_for_new_topic = false
 
-【confidence の目安】
-- 0.9以上: 明確に判定できる（別れ表現、明確な一区切り）
-- 0.7〜0.9: 高い確信度（短い同意・感謝など）
-- 0.5〜0.7: やや曖昧（文脈依存）
-- 0.5未満: 判定困難
+【重要：troubled の判定基準】
+troubled は「最新発話で」以下のキーワードを含む場合のみ：
+- 「難しい」「不安」「心配」「うまくいかない」「困っている」「悩んでいる」
+- 「どうしよう」「どうすればいい」
+- 「落ちた」「ダメだった」「失敗」「無理」「辛い」
 
-返却フォーマット:
+※「大丈夫」「特にない」「わかった」などは troubled ではなく neutral または resolved
+
+返却フォーマット（JSON のみ出力）:
 {
   "ready_for_new_topic": true/false,
   "ending": true/false,
@@ -171,10 +173,11 @@ END_DETECTOR_SYSTEM_PROMPT = """あなたは会話の「区切りタイミング
   "user_state": "satisfied|resolved|neutral|curious|troubled|emotional|farewell"
 }
 
-例1: {"ready_for_new_topic": true, "ending": false, "confidence": 0.85, "reason": "『ありがとう』で相談が一区切り、新話題を振れるタイミング", "user_state": "satisfied"}
-例2: {"ready_for_new_topic": false, "ending": false, "confidence": 0.9, "reason": "『最近ちょっと悩んでて…』と悩みを話し始めている", "user_state": "troubled"}
-例3: {"ready_for_new_topic": false, "ending": true, "confidence": 0.95, "reason": "『おやすみ』で会話終了、新話題は不自然", "user_state": "farewell"}
-例4: {"ready_for_new_topic": true, "ending": false, "confidence": 0.8, "reason": "『うん、そうする』で決意表明、別の話題を振れる", "user_state": "resolved"}"""
+例1: {"ready_for_new_topic": true, "ending": false, "confidence": 0.85, "reason": "『特にない』で話題なし、新話題を振れる", "user_state": "neutral"}
+例2: {"ready_for_new_topic": true, "ending": false, "confidence": 0.85, "reason": "『大丈夫』で問題なし、新話題を振れる", "user_state": "neutral"}
+例3: {"ready_for_new_topic": false, "ending": false, "confidence": 0.95, "reason": "『〜が難しい』と悩みを打ち明けている", "user_state": "troubled"}
+例4: {"ready_for_new_topic": false, "ending": false, "confidence": 0.9, "reason": "『〜が不安』と不安を表明している", "user_state": "troubled"}
+例5: {"ready_for_new_topic": true, "ending": false, "confidence": 0.8, "reason": "『わかった』で一区切り", "user_state": "resolved"}"""
 
 
 # =============================================================================

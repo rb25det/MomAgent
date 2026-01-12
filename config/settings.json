@@ -15,6 +15,6 @@
   "CHECKER_LOG_PATH": "logs/checker_events.log",
   "ENABLE_END_DETECTOR": true,
   "END_DETECTOR_TIMEOUT_SEC": 8,
-  "END_DETECTOR_CONFIDENCE": 0.85,
+  "END_DETECTOR_CONFIDENCE": 0.7,
   "END_DETECTOR_LOG_PATH": "logs/end_detector_events.log"
 }
